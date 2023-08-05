@@ -135,4 +135,8 @@ Exit the `psql` tool
 
 ```{sql}
 \q
-```
+```  
+
+### Install ChirpStack  
+
+This is the next step
