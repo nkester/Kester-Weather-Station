@@ -47,7 +47,11 @@ This is the final list of equipment:
   * Raspberry Pi 3, purchased in 2017  
     * Loaded with Ubuntu Server 22.04 LTS: We went with this so we had the full power and options of Ubuntu (as compared to Raspberry OS) while minimizing the overhead that comes with loading Ubuntu Desktop.  
     * 10 GB micro SD memory card
-  * The Seeed Studio equipment **To be added**  
+  * The Seeed Studio equipment  
+    * SeeedStudio SenseCAP S2120 LoRaWAN 8-in-1 Weather Station ([Manual Here](./documents/SenseCAP%20S2120%20LoRaWAN%208-in-1%20Weather%20Station%20User%20Guide.pdf))  
+    * SeeedStudio SenseCAP M2 LoRaWAN Indoor Gateway  
+      * [M2 Quick Start](./documents/Quick%20Start%20for%20SenseCAP%20M2%20Gateway%20%26%20Sensors.pdf)
+      * [Connecting the M2 to ChirpStack](./documents/Connect_M2_Multi-Platform_Gateway_to_ChirpStack.pdf)  
 
 ## Setting up the Raspberry Pi  
 
