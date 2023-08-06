@@ -143,4 +143,135 @@ Exit the `psql` tool
 
 ### Install ChirpStack  
 
-This is the next step
+So that we can pull in and install the ChirpStack software we need to connect to its repository.  
+
+### How Linux Software Works  
+
+Software is stored in "repositories" or a "repo." This is like the app store where you go to download and install games. Unlike the app store, there are many repos where you can get linux software. There are the primary repos for the type of linux you are using and they are others for specific companies or developers. `ChirpStack` maintains their own so we need to point our computer to it (like its URL) so we can install software from it.  
+
+The cool thing about this is that people make this (ChirpStack, PostgreSQL, and Ubuntu Linux) for free!
+
+[What is a repo](https://aws.amazon.com/what-is/repo/#:~:text=A%20repository%2C%20or%20repo%2C%20is,of%20documents%20when%20developing%20software.)  
+
+### Setting up the Repo  
+
+Ensure we have the software required to connect to these other repositories.  
+
+To ensure we get the correct software and don't end up downloading bad software that someone has put out there, we need to get the key for the ChirpStack repository.  
+
+> This differs from the Chirpstack documentation because we are using `gpg` rather than `apt-key`
+
+```{bash}
+# Get the key from the trusted ubuntu key server
+
+sudo gpg --no-default-keyring --keyring /usr/share/keyrings/chirpstack-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 1CE2AFD36DBCCA00
+```  
+
+
+Now add the URL to their repository to the list of repositories we check and have access to:  
+
+```{bash}
+sudo echo "deb [signed-by=/usr/share/keyrings/chirpstack-archive-keyring.gpg] https://artifacts.chirpstack.io/packages/4.x/deb stable main" | sudo tee /etc/apt/sources.list.d/chirpstack.list
+```
+
+Now that we have a new location for software, our computer needs to look at it to see what is available. We do this with:
+
+```{bash}
+sudo apt update
+```  
+
+IF the `sudo apt update` command above produces errors or you get a lot of `Ign` rather than `Get` and `Hit` responses, we may need to point back to the Google Domain Name Server. Do this with the following commands.
+
+```{bash}
+sudo cp /etc/resolv.conf etc/resolv.conf-2023-07-17
+echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+```
+
+## Install and Configure ChirpStack Gateway Bridge  
+
+Finally we are to the point we can install the ChirpStack Gateway Bridge.  
+
+Do that with:  
+
+```{bash}
+sudo apt install chirpstack-gateway-bridge
+```  
+
+### Configure
+
+Now, to configure the bridge, we need to make a few changes. These are specified in this part of the [ChirpStack Documentation](https://www.chirpstack.io/docs/getting-started/debian-ubuntu.html#configuration).  
+
+First, open the TOML (Tom's Obvious, Minimal Language) configuration file like this (note, we use `vim` because that is what we installed. We could use `nano` or another editor if we want to):  
+
+```{bash}
+vim /etc/chirpstack-gateway-bridge/chirpstack-gateway-bridge.toml
+```  
+
+Now we want to find the `[integration.mqtt]` section for our region.  
+
+> I do not know if we should set up our gateway as a US or EU region. I think EU but it may need to match the hardware.  
+
+For now, I'll use the EU example.  
+
+```
+ # MQTT integration configuration.
+  [integration.mqtt]
+  # Event topic template.
+  event_topic_template="eu868/gateway/{{ .GatewayID }}/event/{{ .EventType }}"
+
+  # Command topic template.
+  command_topic_template="eu868/gateway/{{ .GatewayID }}/command/#"
+```  
+
+### Start  
+
+Now we start the ChirpStack Gateway Bridge service and enable it when the computer starts up.  
+
+As explanation, we installed the gateway bridge but have not run the program yet. In linus, services run in the background and allow us to interact with them in various ways. If the service is not started then we will not be able to call it when we need to or it will not be actively "listening" for messages from our sensor or other systems.  
+
+By enabling the service, that means that we want the service to automatically start each time the computer starts. This is helpful so that we don't need to remember each service that needs to always run so that we can start it again when the computer restarts.  
+
+```{bash}
+# start chirpstack-gateway-bridge
+sudo systemctl start chirpstack-gateway-bridge
+
+# start chirpstack-gateway-bridge on boot
+sudo systemctl enable chirpstack-gateway-bridge
+
+```
+
+### Install Chirpstack
+
+This may be confusing but at this point we need to install chirpstack. In the previous step we installed and configured the chirpstack gateway which is what allows us to connect to data services. This is the chirpstack program itself.  
+
+```{bash}
+apt install chirpstack
+```
+
+### Configuring Chirpstack
+
+First we need to start the chirpstack service and enable it whenever the computer starts. This is similar to the gateway bridge we did previously.  
+
+```{bash}
+# start chirpstack
+sudo systemctl start chirpstack
+
+# start chirpstack on boot
+sudo systemctl enable chirpstack
+
+# We also need journalctl so we need to install systemd
+#sudo apt install -y systemd
+
+```
+
+> A quick note on journals and logs. Computer programs produce logs of what they are doing to either help users de-bug, understand what the program is doing, or to serve as their outputs. It is useful to look at a program's logs since we aren't able to directly see what is happening inside the computer.  
+
+Now that our ChirpStack service has started, lets see what it is doing in the output log.  
+
+```{bash}
+sudo journalctl -f -n 100 -u chirpstack
+```  
+
+These logs showed many errors where `chirpstack` tried to connect to all the regions listed. Looking into the `chirpstack` config file at `/etc/chirpstack/chirpstack.toml` all regions were enabled. I commented out all but `eu868` but this did not solve the issue. I think we will get there at the next step when we configure `chirpstack`.  
+
+At this point we can access the Chirpstack Server at `http://localhost:8080` or from within the home network at `http://<raspberry pi IP address>:8080`
