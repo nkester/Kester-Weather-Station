@@ -275,3 +275,35 @@ sudo journalctl -f -n 100 -u chirpstack
 These logs showed many errors where `chirpstack` tried to connect to all the regions listed. Looking into the `chirpstack` config file at `/etc/chirpstack/chirpstack.toml` all regions were enabled. I commented out all but `eu868` but this did not solve the issue. I think we will get there at the next step when we configure `chirpstack`.  
 
 At this point we can access the Chirpstack Server at `http://localhost:8080` or from within the home network at `http://<raspberry pi IP address>:8080`
+
+## Connect the Gateway  
+
+### Provide a stable IP address  
+
+At this point we have set up the Raspberry Pi as a server running the chirpstack network server that we can reach through the IP address assigned to the Raspberry Pi on our local area network (LAN). The issue though, is that each time the router or Raspberry Pi restarts our router's dynamic host configuration protocol (DHCP) server will assign it a new IP address. This is not useful if we want to have a stable address to access this server from. To fix this, we will assign our Raspberry Pi a static IP address.  
+
+In this case, I chose `192.168.3.54` so I can always access my Kester Weather Station ChirpStack Network Server from within my local network at `192.168.3.54:8080`.  
+
+### Next Steps  
+
+The next step is to setup, configure, and connect our Seeed Studio M2 LoRaWAN Gateway to our Chirpstack Network Server. This is described in the [Seeed Studio M2 connection instructions](../documents/Connect_M2_Multi-Platform_Gateway_to_ChirpStack.pdf) located in this project.  
+
+> Note: a similar product that seems more up-to-date and applies to version 4 of ChirpStack [Chirpstack Wiki for M2 Gateway](https://wiki.seeedstudio.com/Network/SenseCAP_Network/SenseCAP_M2_Multi_Platform/Tutorial/Connect-M2-Multi-Platform-Gateway-to-ChirpStack/)  
+
+### Isolation  
+
+Our intention is not to have anything from Seeed Studio reach out directly to the internet. To do this I will assign the gateway a static IP address in my LAN similar to the Raspberry Pi and block access to services for that address. This will allow it to communicate to devices within the LAN but not outside of it.  
+
+To do this, I connect the M2 to my router. I then sign into my router, find the M2 listed in my "Connected Devices" and assign it a static IP address. To keep the devices associated with this project close, I assigned it the IP address `192.168.3.55`.  
+
+Next, I went into the security section of my router to the "Block Services" section. I created a new service to block, selected the M2's IP address, and blocked any service type. This blocks all ports to that device. 
+
+After applying this block, I wanted to confirm this performed as expected. I accessed the M2 Web UI at its IP address (`192.168.3.55`), logged in with the username and password supplied on the device, and navigated to `Network` -> `Diagnostics`.   
+
+To test the connection I tried to ping the built in network utility `sensecapmx.com` and conduct a speed test. As expected, both failed (see below).  
+
+![alt text](img/seeedGatewayNetworkDiagnostics.png "Failed Network Diagnostics")  
+
+### Connect the M2 Gateway to Chirpstack  
+
+Add a gateway as described in this ChirpStack [Connecting a Gateway](https://www.chirpstack.io/docs/guides/connect-gateway.html) guide and the [Seeed Studio connecting to ChirpStack docs](https://wiki.seeedstudio.com/Network/SenseCAP_Network/SenseCAP_M2_Multi_Platform/Tutorial/Connect-M2-Multi-Platform-Gateway-to-ChirpStack/#11-add-gateway). First add a gateway, then add a device profile, then add a device (using that device profile).
