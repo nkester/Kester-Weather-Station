@@ -204,7 +204,7 @@ Now, to configure the bridge, we need to make a few changes. These are specified
 First, open the TOML (Tom's Obvious, Minimal Language) configuration file like this (note, we use `vim` because that is what we installed. We could use `nano` or another editor if we want to):  
 
 ```{bash}
-vim /etc/chirpstack-gateway-bridge/chirpstack-gateway-bridge.toml
+sudo vim /etc/chirpstack-gateway-bridge/chirpstack-gateway-bridge.toml
 ```  
 
 Now we want to find the `[integration.mqtt]` section for our region.  
@@ -296,6 +296,8 @@ Our intention is not to have anything from Seeed Studio reach out directly to th
 
 To do this, I connect the M2 to my router. I then sign into my router, find the M2 listed in my "Connected Devices" and assign it a static IP address. To keep the devices associated with this project close, I assigned it the IP address `192.168.3.55`.  
 
+> Note: You can connect the M2 to your router wirelessly as well. Do this by first connecting it via Ethernet and then connecting to your wireless network via the `Network` tab. **If you want to end up with a wireless connection, do this now or else you'll be required to put port blocking rules in again.**  
+
 Next, I went into the security section of my router to the "Block Services" section. I created a new service to block, selected the M2's IP address, and blocked any service type. This blocks all ports to that device. 
 
 After applying this block, I wanted to confirm this performed as expected. I accessed the M2 Web UI at its IP address (`192.168.3.55`), logged in with the username and password supplied on the device, and navigated to `Network` -> `Diagnostics`.   
@@ -306,4 +308,29 @@ To test the connection I tried to ping the built in network utility `sensecapmx.
 
 ### Connect the M2 Gateway to Chirpstack  
 
-Add a gateway as described in this ChirpStack [Connecting a Gateway](https://www.chirpstack.io/docs/guides/connect-gateway.html) guide and the [Seeed Studio connecting to ChirpStack docs](https://wiki.seeedstudio.com/Network/SenseCAP_Network/SenseCAP_M2_Multi_Platform/Tutorial/Connect-M2-Multi-Platform-Gateway-to-ChirpStack/#11-add-gateway). First add a gateway, then add a device profile, then add a device (using that device profile).
+The following are useful references. The step-by-step used below is provided in the first.  
+  1.  [Seeed Studio connecting to ChirpStack docs](https://wiki.seeedstudio.com/Network/SenseCAP_Network/SenseCAP_M2_Multi_Platform/Tutorial/Connect-M2-Multi-Platform-Gateway-to-ChirpStack/#11-add-gateway)  
+  2. This ChirpStack [Connecting a Gateway](https://www.chirpstack.io/docs/guides/connect-gateway.html) guide  
+  
+ 
+First, log into the UI at `192.168.3.54:8080`. The chirpstack server uses port `8080` rather than the standard `80` or `443`. I'll look to change that in the future.  
+
+At this point you should see a web user interface similar to this:  
+
+![alt text](img/chirpstack_webui.png)  
+
+The ChirpStack tenant is already installed as part of our previous work.  
+
+The next step is to add a gateway. I'll call this one the `Seeed M2 Gateway`. We will need the gateway ID which we will get by logging into the gateway at `192.168.3.55`.  
+
+Once we've created the gateway we need to add a device. Before we do that, we need to add a device profile. Give the device profile a name, the region should already be filled in based on previous work (EU868 for us), the MAC version is LoRaWAN 1.0.3, regional parameters revision is `A`, and leave the default ADR algorithm. I named it `Seeed Gateway`.  
+
+Finally, in order to add the device, we create an application. Do this on the application tab. Simply give the application a name, I named mine `Kester Weather Station App` and create it.  
+
+Once you have an application, you can add devices to it using the device profile you just created. I called the device `Seed Gateway M2	`.  
+
+With the application and device created, we need to go back to the M2 web console at `192.168.3.55`, go to the `LoRa` -> `LoRa Network` tab. Put the gateway into `Packet Forwarder` mode give it the ChirpStack server IP as the Server Address then click `Save & Apply`. With this you should see a green check on both sides of the globe on the M2 web console `Status` -> `Overview` page.  Back in the ChirpStack server you should see the gateway as active now (green donut) rather than the orange donut previously.
+
+
+
+
