@@ -331,6 +331,26 @@ Once you have an application, you can add devices to it using the device profile
 
 With the application and device created, we need to go back to the M2 web console at `192.168.3.55`, go to the `LoRa` -> `LoRa Network` tab. Put the gateway into `Packet Forwarder` mode give it the ChirpStack server IP as the Server Address then click `Save & Apply`. With this you should see a green check on both sides of the globe on the M2 web console `Status` -> `Overview` page.  Back in the ChirpStack server you should see the gateway as active now (green donut) rather than the orange donut previously.
 
+### Configure and Connect the 8-in-1 Weather Station (S2120)  
+
+Finally, we need to configure and connect the Weather Station to the network. Confusingly, this is done through ChirpStack, not the M2 gateway web console. This is poorly documented in the Seeed Studio documentation for both the M2 and S2120.  
+
+First, we created a device profile for the weather station in ChirpStack. We named this device profile `Weather Station Profile` with the same settings at the M2 Gateway (Region = `EU868`, MAC Version = `LoRaWAN 1.0.3`, Regional parameters revision = `A`, ADR algorithm = `default`). Funder the `Join (OTAA/ABP)` tab, ensure the setting `Device supports OTAA` is enabled, and `Class-B` and `Class-C` are **Disabled**. The `Codec` tab is used to parse the sensor's payload (messages) into meaningful responses. While we did not find a published data model for the payload to build my own parser, we found one provided by Seeed Studios on GitHub for `The Things Network (TTN)`. We used this and it worked well. The codec is at the [TTN-Payload-Decoder](https://github.com/Seeed-Solution/TTN-Payload-Decoder/blob/master/SenseCAP_S2120_Weather_Station_Decoder.js) project in Seeed Studio's GitHub account. Finally, under the `Measurements` tab, ensure the `Automatically detect measurement keys` is selected. Save and submit all changes.  
+
+Next, while still in the ChirpStack, navigate to the `Application` section and select the `Kester Weather Station App`. You should see the device for the M2 Gateway in the app. We want to add another device for the weather station. I called this `Weather Station`. Use the device profile you just created and use the EUI for the Weather Station (not the gateway).  
+
+Once the device has been created in ChirpStack, we need to configure the weather station. Unfortunately, the SenseCap sensors only allow you to access their sensors via Blue Tooth through their phone application, `SenseCap Mate`. After downloading the app (registration is not required), we put the app into search mode while powering up the weather station. The station should show a solid red light to indicate it is looking to connect. Once connected to your phone through the application we set the frequency range (EU868), time, and application key. Get the application key from the ChirpStack device setting under `OTAA keys`. After changing anything else you want to and submitting those changes the sensor should connected to ChirpStack through the M2 Gateway. You'll know it successfully connected when the `Activation` tab in the ChirpStack device section has information about the device address and several keys. One additional setting we changed was to have the sensor wait to confirm the payload was received by ChirpStack before deleting the old. While this uses more power, it ensures we get a reading. Initially we set the measurement interval to 60 min.  
+
+When the codec (payload decoder) worked properly and the weather sensor was connected, we saw measurements get logged in the `Events` tab in ChirpStack. Clicking on one of these allows you to see the parsed payload and all measurements. This is a sample parsed payload:  
+
+![alt text](img/weatherSensorEvents.png)  
+
+
+### Storing Data in PostgreSQL  
+
+It is great to get the data but we need to store it for the long term...
+
+https://www.chirpstack.io/docs/chirpstack/integrations/postgresql.html  
 
 
 
