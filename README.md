@@ -204,7 +204,7 @@ Now, to configure the bridge, we need to make a few changes. These are specified
 First, open the TOML (Tom's Obvious, Minimal Language) configuration file like this (note, we use `vim` because that is what we installed. We could use `nano` or another editor if we want to):  
 
 ```{bash}
-vim /etc/chirpstack-gateway-bridge/chirpstack-gateway-bridge.toml
+sudo vim /etc/chirpstack-gateway-bridge/chirpstack-gateway-bridge.toml
 ```  
 
 Now we want to find the `[integration.mqtt]` section for our region.  
@@ -275,3 +275,82 @@ sudo journalctl -f -n 100 -u chirpstack
 These logs showed many errors where `chirpstack` tried to connect to all the regions listed. Looking into the `chirpstack` config file at `/etc/chirpstack/chirpstack.toml` all regions were enabled. I commented out all but `eu868` but this did not solve the issue. I think we will get there at the next step when we configure `chirpstack`.  
 
 At this point we can access the Chirpstack Server at `http://localhost:8080` or from within the home network at `http://<raspberry pi IP address>:8080`
+
+## Connect the Gateway  
+
+### Provide a stable IP address  
+
+At this point we have set up the Raspberry Pi as a server running the chirpstack network server that we can reach through the IP address assigned to the Raspberry Pi on our local area network (LAN). The issue though, is that each time the router or Raspberry Pi restarts our router's dynamic host configuration protocol (DHCP) server will assign it a new IP address. This is not useful if we want to have a stable address to access this server from. To fix this, we will assign our Raspberry Pi a static IP address.  
+
+In this case, I chose `192.168.3.54` so I can always access my Kester Weather Station ChirpStack Network Server from within my local network at `192.168.3.54:8080`.  
+
+### Next Steps  
+
+The next step is to setup, configure, and connect our Seeed Studio M2 LoRaWAN Gateway to our Chirpstack Network Server. This is described in the [Seeed Studio M2 connection instructions](../documents/Connect_M2_Multi-Platform_Gateway_to_ChirpStack.pdf) located in this project.  
+
+> Note: a similar product that seems more up-to-date and applies to version 4 of ChirpStack [Chirpstack Wiki for M2 Gateway](https://wiki.seeedstudio.com/Network/SenseCAP_Network/SenseCAP_M2_Multi_Platform/Tutorial/Connect-M2-Multi-Platform-Gateway-to-ChirpStack/)  
+
+### Isolation  
+
+Our intention is not to have anything from Seeed Studio reach out directly to the internet. To do this I will assign the gateway a static IP address in my LAN similar to the Raspberry Pi and block access to services for that address. This will allow it to communicate to devices within the LAN but not outside of it.  
+
+To do this, I connect the M2 to my router. I then sign into my router, find the M2 listed in my "Connected Devices" and assign it a static IP address. To keep the devices associated with this project close, I assigned it the IP address `192.168.3.55`.  
+
+> Note: You can connect the M2 to your router wirelessly as well. Do this by first connecting it via Ethernet and then connecting to your wireless network via the `Network` tab. **If you want to end up with a wireless connection, do this now or else you'll be required to put port blocking rules in again.**  
+
+Next, I went into the security section of my router to the "Block Services" section. I created a new service to block, selected the M2's IP address, and blocked any service type. This blocks all ports to that device. 
+
+After applying this block, I wanted to confirm this performed as expected. I accessed the M2 Web UI at its IP address (`192.168.3.55`), logged in with the username and password supplied on the device, and navigated to `Network` -> `Diagnostics`.   
+
+To test the connection I tried to ping the built in network utility `sensecapmx.com` and conduct a speed test. As expected, both failed (see below).  
+
+![alt text](img/seeedGatewayNetworkDiagnostics.png "Failed Network Diagnostics")  
+
+### Connect the M2 Gateway to Chirpstack  
+
+The following are useful references. The step-by-step used below is provided in the first.  
+  1.  [Seeed Studio connecting to ChirpStack docs](https://wiki.seeedstudio.com/Network/SenseCAP_Network/SenseCAP_M2_Multi_Platform/Tutorial/Connect-M2-Multi-Platform-Gateway-to-ChirpStack/#11-add-gateway)  
+  2. This ChirpStack [Connecting a Gateway](https://www.chirpstack.io/docs/guides/connect-gateway.html) guide  
+  
+ 
+First, log into the UI at `192.168.3.54:8080`. The chirpstack server uses port `8080` rather than the standard `80` or `443`. I'll look to change that in the future.  
+
+At this point you should see a web user interface similar to this:  
+
+![alt text](img/chirpstack_webui.png)  
+
+The ChirpStack tenant is already installed as part of our previous work.  
+
+The next step is to add a gateway. I'll call this one the `Seeed M2 Gateway`. We will need the gateway ID which we will get by logging into the gateway at `192.168.3.55`.  
+
+Once we've created the gateway we need to add a device. Before we do that, we need to add a device profile. Give the device profile a name, the region should already be filled in based on previous work (EU868 for us), the MAC version is LoRaWAN 1.0.3, regional parameters revision is `A`, and leave the default ADR algorithm. I named it `Seeed Gateway`.  
+
+Finally, in order to add the device, we create an application. Do this on the application tab. Simply give the application a name, I named mine `Kester Weather Station App` and create it.  
+
+Once you have an application, you can add devices to it using the device profile you just created. I called the device `Seed Gateway M2	`.  
+
+With the application and device created, we need to go back to the M2 web console at `192.168.3.55`, go to the `LoRa` -> `LoRa Network` tab. Put the gateway into `Packet Forwarder` mode give it the ChirpStack server IP as the Server Address then click `Save & Apply`. With this you should see a green check on both sides of the globe on the M2 web console `Status` -> `Overview` page.  Back in the ChirpStack server you should see the gateway as active now (green donut) rather than the orange donut previously.
+
+### Configure and Connect the 8-in-1 Weather Station (S2120)  
+
+Finally, we need to configure and connect the Weather Station to the network. Confusingly, this is done through ChirpStack, not the M2 gateway web console. This is poorly documented in the Seeed Studio documentation for both the M2 and S2120.  
+
+First, we created a device profile for the weather station in ChirpStack. We named this device profile `Weather Station Profile` with the same settings at the M2 Gateway (Region = `EU868`, MAC Version = `LoRaWAN 1.0.3`, Regional parameters revision = `A`, ADR algorithm = `default`). Funder the `Join (OTAA/ABP)` tab, ensure the setting `Device supports OTAA` is enabled, and `Class-B` and `Class-C` are **Disabled**. The `Codec` tab is used to parse the sensor's payload (messages) into meaningful responses. While we did not find a published data model for the payload to build my own parser, we found one provided by Seeed Studios on GitHub for `The Things Network (TTN)`. We used this and it worked well. The codec is at the [TTN-Payload-Decoder](https://github.com/Seeed-Solution/TTN-Payload-Decoder/blob/master/SenseCAP_S2120_Weather_Station_Decoder.js) project in Seeed Studio's GitHub account. Finally, under the `Measurements` tab, ensure the `Automatically detect measurement keys` is selected. Save and submit all changes.  
+
+Next, while still in the ChirpStack, navigate to the `Application` section and select the `Kester Weather Station App`. You should see the device for the M2 Gateway in the app. We want to add another device for the weather station. I called this `Weather Station`. Use the device profile you just created and use the EUI for the Weather Station (not the gateway).  
+
+Once the device has been created in ChirpStack, we need to configure the weather station. Unfortunately, the SenseCap sensors only allow you to access their sensors via Blue Tooth through their phone application, `SenseCap Mate`. After downloading the app (registration is not required), we put the app into search mode while powering up the weather station. The station should show a solid red light to indicate it is looking to connect. Once connected to your phone through the application we set the frequency range (EU868), time, and application key. Get the application key from the ChirpStack device setting under `OTAA keys`. After changing anything else you want to and submitting those changes the sensor should connected to ChirpStack through the M2 Gateway. You'll know it successfully connected when the `Activation` tab in the ChirpStack device section has information about the device address and several keys. One additional setting we changed was to have the sensor wait to confirm the payload was received by ChirpStack before deleting the old. While this uses more power, it ensures we get a reading. Initially we set the measurement interval to 60 min.  
+
+When the codec (payload decoder) worked properly and the weather sensor was connected, we saw measurements get logged in the `Events` tab in ChirpStack. Clicking on one of these allows you to see the parsed payload and all measurements. This is a sample parsed payload:  
+
+![alt text](img/weatherSensorEvents.png)  
+
+
+### Storing Data in PostgreSQL  
+
+It is great to get the data but we need to store it for the long term...
+
+https://www.chirpstack.io/docs/chirpstack/integrations/postgresql.html  
+
+
+
