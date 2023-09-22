@@ -339,18 +339,218 @@ First, we created a device profile for the weather station in ChirpStack. We nam
 
 Next, while still in the ChirpStack, navigate to the `Application` section and select the `Kester Weather Station App`. You should see the device for the M2 Gateway in the app. We want to add another device for the weather station. I called this `Weather Station`. Use the device profile you just created and use the EUI for the Weather Station (not the gateway).  
 
-Once the device has been created in ChirpStack, we need to configure the weather station. Unfortunately, the SenseCap sensors only allow you to access their sensors via Blue Tooth through their phone application, `SenseCap Mate`. After downloading the app (registration is not required), we put the app into search mode while powering up the weather station. The station should show a solid red light to indicate it is looking to connect. Once connected to your phone through the application we set the frequency range (EU868), time, and application key. Get the application key from the ChirpStack device setting under `OTAA keys`. After changing anything else you want to and submitting those changes the sensor should connected to ChirpStack through the M2 Gateway. You'll know it successfully connected when the `Activation` tab in the ChirpStack device section has information about the device address and several keys. One additional setting we changed was to have the sensor wait to confirm the payload was received by ChirpStack before deleting the old. While this uses more power, it ensures we get a reading. Initially we set the measurement interval to 60 min.  
+Once the device has been created in ChirpStack, we need to configure the weather station. Unfortunately, the SenseCap sensors only allow you to access their sensors via Blue Tooth through their phone application, `SenseCap Mate` (at least from what I found). After downloading the app (registration is not required), we put the app into search mode while powering up the weather station. The station should show a solid red light to indicate it is looking to connect. 
 
-When the codec (payload decoder) worked properly and the weather sensor was connected, we saw measurements get logged in the `Events` tab in ChirpStack. Clicking on one of these allows you to see the parsed payload and all measurements. This is a sample parsed payload:  
+Once connected to our phone through the application, we set the frequency range (EU868), time, and application key. Get the application key from the ChirpStack device setting under `OTAA keys`. After changing anything else you want to and submitting those changes the sensor should connected to ChirpStack through the M2 Gateway. You'll know it successfully connected when the `Activation` tab in the ChirpStack device section has information about the device address and several keys. 
+
+One additional setting we changed was to have the sensor wait to confirm the payload was received by ChirpStack before deleting the old. 
+
+>This is the 2C + 1N Packet Policy setting in the configuration screen shot below. 
+
+While this uses more power, it ensures the sensor confirms receipt of the reading before deleting the measurement onboard the sensor. Initially we set the measurement interval to 60 min but found that took too long and changed it to 15 min.
+
+Below is an example of our weather station configuration completed through the `SenseCap Mate` app:  
+
+![alt text](img/configuration_sensecapMate.png "Sensor Config")
+
+Likewise, this is an example of a sensor measurement as shown through the `SenseCap Mate` app:  
+
+![alt text](img/measurement_sensecapMate.png "Sensor Measurement")
+
+### Reading the Measurements in ChirpStack  
+
+With the codec (payload decoder) applied in ChirpStack and the weather sensor connected, we began recieving measurements logged in the `Events` tab of ChirpStack. Clicking on one of these allows you to see the parsed payload and all measurements. This is a sample parsed payload:  
 
 ![alt text](img/weatherSensorEvents.png)  
 
+While this is neat, by default, ChirpStack only saves 10 readings. We can change this is the ChirpStack configuration but that doesn't do much good as we can't use the data through the ChirpStack interface.  
+
+> ChirpStack assumes you're connecting it with some other capability like a cloud service provider (Google Cloud Platform, Azure, or AWS) or some other system.  
+
+This is where the PostgreSQL server we installed previously will come in handy. ChirpStack uses this to store its application settins (users, device profiles, etc.) but it can also be integrated with PostgreSQL for data storage.
 
 ### Storing Data in PostgreSQL  
 
-It is great to get the data but we need to store it for the long term...
+ChirpStack provides [Documentation](https://www.chirpstack.io/docs/chirpstack/integrations/postgresql.html) on how to configure the integration via ChirpStack's configuration files.  
 
-https://www.chirpstack.io/docs/chirpstack/integrations/postgresql.html  
+In short, to enable the ChirpStack -> PostgreSQL integration there are two steps. First, create the required resources in postgres and second, edit the ChirpStack configuration file with the proper credentials to connect to the database.  
+
+Connect to the postgres server with `sudo -u postgres psql` and then provide the following commands to create a role, password, and database.  
+
+```sql
+-- create role for authentication
+create role chirpstack_integration with login password 'chirpstack_integration';
+
+-- create database
+create database chirpstack_integration with owner chirpstack_integration;
+
+-- exit psql
+\q
+```
+
+Next, open the ChirpStack configuration file with:
+
+`sudo vim /etc/chirpstack/chirpstack.toml`  
+
+Navigate to the bottom of the configuration to find the `[integration]` section. Add `postgresql` to the `enabled` array and add the `[integration.postgresql]` stanza.   
 
 
+```toml
+[integration]
+  enabled=["mqtt","postgresql"]
 
+  [integration.mqtt]
+    server="tcp://localhost:1883/"
+    json=true
+
+  [integration.postgresql]
+    dsn="postgres://chirpstack_integration:chirpstack_integration@localhost/chirpstack_integration?sslmode=disable"
+
+```
+Replace `chirpstack_integration:chirpstack_integration` with your selected `username:password`.
+
+After making these changes, restart chirpstack service with `sudo systemctl restart chirpstack`.  
+
+After some period of time (15 minutes for us) we saw some records begin to populate in this database. Chirpstack creates several tables (shown below) but our measurement data is in the `event_up` table. 
+
+After connecting to the database with `\c chirpstack_integration` within the postgres commandline interface (`psql`), execute the commend `\dt` to list all tables. 
+
+```sql
+                         List of relations
+ Schema |            Name            | Type  |         Owner
+--------+----------------------------+-------+------------------------
+ public | __diesel_schema_migrations | table | chirpstack_integration
+ public | event_ack                  | table | chirpstack_integration
+ public | event_integration          | table | chirpstack_integration
+ public | event_join                 | table | chirpstack_integration
+ public | event_location             | table | chirpstack_integration
+ public | event_log                  | table | chirpstack_integration
+ public | event_status               | table | chirpstack_integration
+ public | event_tx_ack               | table | chirpstack_integration
+ public | event_up                   | table | chirpstack_integration
+(9 rows)
+```
+
+Using the `JSON` object referenced previously in the ChirpStack UI, we can see that the `time`, `data`, and `object` fields are of interest to us. We can get these with the following PostgreSQL query:  
+
+```sql
+ SELECT time, data, object FROM event_up LIMIT 1;
+             time              |                               data                               |                                                          object
+-------------------------------+------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------
+ 2023-09-14 04:13:13.094156+00 | \x0008010000031404f5200500000600000700000000000000000f100012ef0c | {"err": 0.0, "valid": true, "payload": "0008010000031404F5200500000600000700000000000000000F100012EF0C", "messages": []}
+
+```  
+
+Of note, when the `confirmed` field does not equal `t` we didn't find a payload (parsed JSON). This is likely because there was an error or the transmission did not include this type of data. An example is the one above with an empty `[]` message key. To remove those from our query we can modify it with a `WHERE` claus like below:  
+
+```sql 
+SELECT time, data, object FROM event_up WHERE confirmed = 't' LIMIT 1;
+```
+
+The resultant `object` field is a `jsonb` data type and looks like this:
+
+```json
+{
+  "err": 0.0, 
+  "valid": true, 
+  "payload": "04640101010B003C05A00100C35E0000000000000002002A00000000278C", 
+  "messages": [
+    [
+      {
+        "Battery(%)": 100.0, 
+        "gpsInterval": 86400.0, 
+        "measureInterval": 3600.0, 
+        "Firmware Version": "1.11", 
+        "Hardware Version": "1.1"
+        }
+        ], 
+        [
+          {
+            "type": "Air Temperature", 
+            "measurementId": "4097", 
+            "measurementValue": 19.5
+            },
+          {
+            "type": "Air Humidity", 
+            "measurementId": "4098", 
+            "measurementValue": 94.0
+            }, 
+          {
+            "type": "Light Intensity", 
+            "measurementId": "4099", 
+            "measurementValue": 0.0
+            }, 
+          {
+            "type": "UV Index", 
+            "measurementId": "4190", 
+            "measurementValue": 0.0
+            }, 
+          {
+            "type": "Wind Speed", 
+            "measurementId": "4105", 
+            "measurementValue": 0.0
+            }
+        ], 
+        [
+          {
+            "type": "Wind Direction Sensor", 
+            "measurementId": "4104", 
+            "measurementValue": 42.0
+            }, 
+          {
+            "type": "Rain Gauge", 
+            "measurementId": "4113", 
+            "measurementValue": 0.0
+            }, 
+          {
+            "type": "Barometric Pressure", 
+            "measurementId": "4101", 
+            "measurementValue": 101240.0
+            }
+        ]
+      ]
+    }
+```
+
+This is great but we'd like the data to be organized in a nice rectangular manner to make it easy to query and chart.  
+
+Here comes some PostgreSQL work to restructure the data so we can work with it.  
+
+A few things, because the data constantly gets written to the database, we needed a way that updated regularly. Also, we wanted to limit the amount of duplicated data in the database since this lives on our RaspberryPi and thus has limited storate.  
+
+For these reasons, we opted to codify our data transformation queries into a SQL `View`. This means the transformation will not happen until a call to the view is made and will thus  
+  1) Always represent the full set of data present within the `event_up` table.  
+  2) Take no additional storage space on the device.  
+
+The downside, however, is that we will expend comutational power as we query the view. That is fine for no so we'll move on.  
+
+### Transforming JSON into Rectangular Data in PostgreSQL  
+
+First, here are some pertinent resources I used to develop this solution:  
+
+  * [PostgreSQL Documentation](https://www.postgresql.org/docs/9.4/functions-json.html)  on the json parsing functions, specifically `json_populate_recordset`.  
+  * [Database Stack Exchange](https://dba.stackexchange.com/questions/123053/function-json-populate-record-text-does-not-exist) description of how to make the function work.  
+  * The major components of the final solution in this [Stack Overflow Response](https://stackoverflow.com/a/43914582). I found this answer to be most useful.  
+
+```sql
+CREATE TYPE sensor AS (type text, "measurementId" text, "measurementValue" float);
+```  
+
+```sql
+CREATE VIEW sensor_data 
+	AS SELECT 
+		time, 
+		(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
+	FROM event_up 
+	UNION 
+	SELECT time, 
+	(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
+	FROM event_up 
+	ORDER BY 
+		time, 
+		type;
+```
+
+```sql
+SELECT * FROM sensor_data WHERE type = 'Air Temperature';
+```
