@@ -61,7 +61,7 @@ Through the Raspberry Pi Installer we set our WiFi connection information, out h
 
 Once we put the Raspberry Pi 3 kit together and started it up, we ran a standard `update` and `upgrade` before moving forward with the following code:  
 
-```{bash}
+```
 sudo apt update
 
 sudo apt upgrade -y
@@ -77,7 +77,7 @@ We used this project's companion, `1_initialplan` as well as these ChirpStack do
 
 First to install the libraries required to support ChirpStack:  
 
-```{bash}
+```
 sudo apt install -y \
     mosquitto \
     mosquitto-clients \
@@ -109,19 +109,19 @@ sudo -u postgres psql
 
 Now we want to create a role for chirpstack 
 
-```{sql}
+```sql
 -- create role for authentication
 create role chirpstack with login password 'chirpstack';
 ```  
 
 Then we want to create a database  
-```{sql}
+```sql
 -- create database
 create database chirpstack with owner chirpstack;
 ```
 
 
-```{sql}
+```sql
 -- connect to the chirpstack database
 \c chirpstack
 ```
@@ -130,14 +130,14 @@ The following extension to postgres supports better matching between text string
 
 [Documentation on pg_trm](https://www.postgresql.org/docs/current/pgtrgm.html)
 
-```{sql}
+```sql
 ---create pg_trgm extension
 create extension pg_trgm;
 ```
 
 Exit the `psql` tool  
 
-```{sql}
+```sql
 \q
 ```  
 
@@ -161,7 +161,7 @@ To ensure we get the correct software and don't end up downloading bad software 
 
 > This differs from the Chirpstack documentation because we are using `gpg` rather than `apt-key`
 
-```{bash}
+```
 # Get the key from the trusted ubuntu key server
 
 sudo gpg --no-default-keyring --keyring /usr/share/keyrings/chirpstack-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 1CE2AFD36DBCCA00
@@ -170,19 +170,19 @@ sudo gpg --no-default-keyring --keyring /usr/share/keyrings/chirpstack-archive-k
 
 Now add the URL to their repository to the list of repositories we check and have access to:  
 
-```{bash}
+```
 sudo echo "deb [signed-by=/usr/share/keyrings/chirpstack-archive-keyring.gpg] https://artifacts.chirpstack.io/packages/4.x/deb stable main" | sudo tee /etc/apt/sources.list.d/chirpstack.list
 ```
 
 Now that we have a new location for software, our computer needs to look at it to see what is available. We do this with:
 
-```{bash}
+```
 sudo apt update
 ```  
 
 IF the `sudo apt update` command above produces errors or you get a lot of `Ign` rather than `Get` and `Hit` responses, we may need to point back to the Google Domain Name Server. Do this with the following commands.
 
-```{bash}
+```
 sudo cp /etc/resolv.conf etc/resolv.conf-2023-07-17
 echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
 ```
@@ -193,7 +193,7 @@ Finally we are to the point we can install the ChirpStack Gateway Bridge.
 
 Do that with:  
 
-```{bash}
+```
 sudo apt install chirpstack-gateway-bridge
 ```  
 
@@ -203,7 +203,7 @@ Now, to configure the bridge, we need to make a few changes. These are specified
 
 First, open the TOML (Tom's Obvious, Minimal Language) configuration file like this (note, we use `vim` because that is what we installed. We could use `nano` or another editor if we want to):  
 
-```{bash}
+```
 sudo vim /etc/chirpstack-gateway-bridge/chirpstack-gateway-bridge.toml
 ```  
 
@@ -213,7 +213,7 @@ Now we want to find the `[integration.mqtt]` section for our region.
 
 For now, I'll use the EU example.  
 
-```
+```toml
  # MQTT integration configuration.
   [integration.mqtt]
   # Event topic template.
@@ -231,20 +231,19 @@ As explanation, we installed the gateway bridge but have not run the program yet
 
 By enabling the service, that means that we want the service to automatically start each time the computer starts. This is helpful so that we don't need to remember each service that needs to always run so that we can start it again when the computer restarts.  
 
-```{bash}
+```
 # start chirpstack-gateway-bridge
 sudo systemctl start chirpstack-gateway-bridge
 
 # start chirpstack-gateway-bridge on boot
 sudo systemctl enable chirpstack-gateway-bridge
-
 ```
 
 ### Install Chirpstack
 
 This may be confusing but at this point we need to install chirpstack. In the previous step we installed and configured the chirpstack gateway which is what allows us to connect to data services. This is the chirpstack program itself.  
 
-```{bash}
+```
 apt install chirpstack
 ```
 
@@ -252,7 +251,7 @@ apt install chirpstack
 
 First we need to start the chirpstack service and enable it whenever the computer starts. This is similar to the gateway bridge we did previously.  
 
-```{bash}
+```
 # start chirpstack
 sudo systemctl start chirpstack
 
@@ -261,14 +260,13 @@ sudo systemctl enable chirpstack
 
 # We also need journalctl so we need to install systemd
 #sudo apt install -y systemd
-
 ```
 
 > A quick note on journals and logs. Computer programs produce logs of what they are doing to either help users de-bug, understand what the program is doing, or to serve as their outputs. It is useful to look at a program's logs since we aren't able to directly see what is happening inside the computer.  
 
 Now that our ChirpStack service has started, lets see what it is doing in the output log.  
 
-```{bash}
+```
 sudo journalctl -f -n 100 -u chirpstack
 ```  
 
@@ -405,7 +403,6 @@ Navigate to the bottom of the configuration to find the `[integration]` section.
 
   [integration.postgresql]
     dsn="postgres://chirpstack_integration:chirpstack_integration@localhost/chirpstack_integration?sslmode=disable"
-
 ```
 Replace `chirpstack_integration:chirpstack_integration` with your selected `username:password`.
 
@@ -433,12 +430,11 @@ After connecting to the database with `\c chirpstack_integration` within the pos
 
 Using the `JSON` object referenced previously in the ChirpStack UI, we can see that the `time`, `data`, and `object` fields are of interest to us. We can get these with the following PostgreSQL query:  
 
-```
+```sql
  SELECT time, data, object FROM event_up LIMIT 1;
              time              |                               data                               |                                                          object
 -------------------------------+------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------
  2023-09-14 04:13:13.094156+00 | \x0008010000031404f5200500000600000700000000000000000f100012ef0c | {"err": 0.0, "valid": true, "payload": "0008010000031404F5200500000600000700000000000000000F100012EF0C", "messages": []}
-
 ```  
 
 Of note, when the `confirmed` field does not equal `t` we didn't find a payload (parsed JSON). This is likely because there was an error or the transmission did not include this type of data. An example is the one above with an empty `[]` message key. To remove those from our query we can modify it with a `WHERE` claus like below:  
@@ -547,11 +543,11 @@ As we saw in the example `json` object above, there are two arrays of measuremen
 In addition to the expanded json object, we also want to record the time the measurement was taken. Below is the query that does this for one of those arrays.  
 
 ```sql
-	SELECT 
-		time, 
-		(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
-	FROM event_up 
-  WHERE confirmed = 't';
+SELECT 
+	time, 
+	(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
+FROM event_up 
+WHERE confirmed = 't';
 ```
 
 The `->` operator is how we navigate into levels of json objects in PostgreSQL. The final `0` is the index (starting at 0) of the arrays within the `messages` object. This query returns a response like the one below:
@@ -581,11 +577,11 @@ The `->` operator is how we navigate into levels of json objects in PostgreSQL. 
 Aside from the few empty rows at the top, this is exactly what we are looking for. To confirm, we will do the same for the second array.
 
 ```sql
-	SELECT 
-		time, 
-		(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
-	FROM event_up 
-  WHERE confirmed = 't';
+SELECT 
+	time, 
+	(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
+FROM event_up 
+WHERE confirmed = 't';
 ```
 Like the first array, this gives us the expected results:
 
@@ -613,37 +609,37 @@ Like the first array, this gives us the expected results:
 Now, we want to combine both of these queries together into the same table for a response. The SQL operator for this is `UNION`. We do this with the following query:  
 
 ```sql
-	SELECT 
-		time, 
-		(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
-	FROM event_up 
-  WHERE confirmed = 't'
-  UNION
-  SELECT 
-		time, 
-		(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
-	FROM event_up 
-  WHERE confirmed = 't';
+SELECT 
+	time, 
+	(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
+FROM event_up 
+WHERE confirmed = 't'
+UNION
+SELECT 
+	time, 
+	(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
+FROM event_up 
+WHERE confirmed = 't';
 ```
 
 So that we don't need to write this query every time, we'll save it as a view. When we do this we'll also add order to the table with an `ORDER BY` statement for time and then type. We'll call this view `sensor_data` and create it with the following statement:
 
 ```sql
 CREATE VIEW sensor_data 
-	AS SELECT 
-		time, 
-		(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
-	FROM event_up 
-  WHERE confirmed = 't'
-  UNION
-  SELECT 
-		time, 
-		(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
-	FROM event_up 
-  WHERE confirmed = 't' 
-	ORDER BY 
-		time, 
-		type;
+ AS SELECT 
+  time, 
+  (jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
+ FROM event_up 
+ WHERE confirmed = 't'
+ UNION
+ SELECT 
+	time, 
+	(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
+ FROM event_up 
+ WHERE confirmed = 't' 
+ ORDER BY 
+  time, 
+	type;
 ```
 Now we can query the view with the following command:
 ```sql
