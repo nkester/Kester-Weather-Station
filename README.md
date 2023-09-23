@@ -61,7 +61,7 @@ Through the Raspberry Pi Installer we set our WiFi connection information, out h
 
 Once we put the Raspberry Pi 3 kit together and started it up, we ran a standard `update` and `upgrade` before moving forward with the following code:  
 
-```{bash}
+```
 sudo apt update
 
 sudo apt upgrade -y
@@ -77,7 +77,7 @@ We used this project's companion, `1_initialplan` as well as these ChirpStack do
 
 First to install the libraries required to support ChirpStack:  
 
-```{bash}
+```
 sudo apt install -y \
     mosquitto \
     mosquitto-clients \
@@ -109,19 +109,19 @@ sudo -u postgres psql
 
 Now we want to create a role for chirpstack 
 
-```{sql}
+```sql
 -- create role for authentication
 create role chirpstack with login password 'chirpstack';
 ```  
 
 Then we want to create a database  
-```{sql}
+```sql
 -- create database
 create database chirpstack with owner chirpstack;
 ```
 
 
-```{sql}
+```sql
 -- connect to the chirpstack database
 \c chirpstack
 ```
@@ -130,14 +130,14 @@ The following extension to postgres supports better matching between text string
 
 [Documentation on pg_trm](https://www.postgresql.org/docs/current/pgtrgm.html)
 
-```{sql}
+```sql
 ---create pg_trgm extension
 create extension pg_trgm;
 ```
 
 Exit the `psql` tool  
 
-```{sql}
+```psql
 \q
 ```  
 
@@ -161,7 +161,7 @@ To ensure we get the correct software and don't end up downloading bad software 
 
 > This differs from the Chirpstack documentation because we are using `gpg` rather than `apt-key`
 
-```{bash}
+```
 # Get the key from the trusted ubuntu key server
 
 sudo gpg --no-default-keyring --keyring /usr/share/keyrings/chirpstack-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 1CE2AFD36DBCCA00
@@ -170,19 +170,19 @@ sudo gpg --no-default-keyring --keyring /usr/share/keyrings/chirpstack-archive-k
 
 Now add the URL to their repository to the list of repositories we check and have access to:  
 
-```{bash}
+```
 sudo echo "deb [signed-by=/usr/share/keyrings/chirpstack-archive-keyring.gpg] https://artifacts.chirpstack.io/packages/4.x/deb stable main" | sudo tee /etc/apt/sources.list.d/chirpstack.list
 ```
 
 Now that we have a new location for software, our computer needs to look at it to see what is available. We do this with:
 
-```{bash}
+```
 sudo apt update
 ```  
 
 IF the `sudo apt update` command above produces errors or you get a lot of `Ign` rather than `Get` and `Hit` responses, we may need to point back to the Google Domain Name Server. Do this with the following commands.
 
-```{bash}
+```
 sudo cp /etc/resolv.conf etc/resolv.conf-2023-07-17
 echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
 ```
@@ -193,7 +193,7 @@ Finally we are to the point we can install the ChirpStack Gateway Bridge.
 
 Do that with:  
 
-```{bash}
+```
 sudo apt install chirpstack-gateway-bridge
 ```  
 
@@ -203,7 +203,7 @@ Now, to configure the bridge, we need to make a few changes. These are specified
 
 First, open the TOML (Tom's Obvious, Minimal Language) configuration file like this (note, we use `vim` because that is what we installed. We could use `nano` or another editor if we want to):  
 
-```{bash}
+```
 sudo vim /etc/chirpstack-gateway-bridge/chirpstack-gateway-bridge.toml
 ```  
 
@@ -213,7 +213,7 @@ Now we want to find the `[integration.mqtt]` section for our region.
 
 For now, I'll use the EU example.  
 
-```
+```toml
  # MQTT integration configuration.
   [integration.mqtt]
   # Event topic template.
@@ -231,20 +231,19 @@ As explanation, we installed the gateway bridge but have not run the program yet
 
 By enabling the service, that means that we want the service to automatically start each time the computer starts. This is helpful so that we don't need to remember each service that needs to always run so that we can start it again when the computer restarts.  
 
-```{bash}
+```
 # start chirpstack-gateway-bridge
 sudo systemctl start chirpstack-gateway-bridge
 
 # start chirpstack-gateway-bridge on boot
 sudo systemctl enable chirpstack-gateway-bridge
-
 ```
 
 ### Install Chirpstack
 
 This may be confusing but at this point we need to install chirpstack. In the previous step we installed and configured the chirpstack gateway which is what allows us to connect to data services. This is the chirpstack program itself.  
 
-```{bash}
+```
 apt install chirpstack
 ```
 
@@ -252,7 +251,7 @@ apt install chirpstack
 
 First we need to start the chirpstack service and enable it whenever the computer starts. This is similar to the gateway bridge we did previously.  
 
-```{bash}
+```
 # start chirpstack
 sudo systemctl start chirpstack
 
@@ -261,14 +260,13 @@ sudo systemctl enable chirpstack
 
 # We also need journalctl so we need to install systemd
 #sudo apt install -y systemd
-
 ```
 
 > A quick note on journals and logs. Computer programs produce logs of what they are doing to either help users de-bug, understand what the program is doing, or to serve as their outputs. It is useful to look at a program's logs since we aren't able to directly see what is happening inside the computer.  
 
 Now that our ChirpStack service has started, lets see what it is doing in the output log.  
 
-```{bash}
+```
 sudo journalctl -f -n 100 -u chirpstack
 ```  
 
@@ -339,18 +337,344 @@ First, we created a device profile for the weather station in ChirpStack. We nam
 
 Next, while still in the ChirpStack, navigate to the `Application` section and select the `Kester Weather Station App`. You should see the device for the M2 Gateway in the app. We want to add another device for the weather station. I called this `Weather Station`. Use the device profile you just created and use the EUI for the Weather Station (not the gateway).  
 
-Once the device has been created in ChirpStack, we need to configure the weather station. Unfortunately, the SenseCap sensors only allow you to access their sensors via Blue Tooth through their phone application, `SenseCap Mate`. After downloading the app (registration is not required), we put the app into search mode while powering up the weather station. The station should show a solid red light to indicate it is looking to connect. Once connected to your phone through the application we set the frequency range (EU868), time, and application key. Get the application key from the ChirpStack device setting under `OTAA keys`. After changing anything else you want to and submitting those changes the sensor should connected to ChirpStack through the M2 Gateway. You'll know it successfully connected when the `Activation` tab in the ChirpStack device section has information about the device address and several keys. One additional setting we changed was to have the sensor wait to confirm the payload was received by ChirpStack before deleting the old. While this uses more power, it ensures we get a reading. Initially we set the measurement interval to 60 min.  
+Once the device has been created in ChirpStack, we need to configure the weather station. Unfortunately, the SenseCap sensors only allow you to access their sensors via Blue Tooth through their phone application, `SenseCap Mate` (at least from what I found). After downloading the app (registration is not required), we put the app into search mode while powering up the weather station. The station should show a solid red light to indicate it is looking to connect. 
 
-When the codec (payload decoder) worked properly and the weather sensor was connected, we saw measurements get logged in the `Events` tab in ChirpStack. Clicking on one of these allows you to see the parsed payload and all measurements. This is a sample parsed payload:  
+Once connected to our phone through the application, we set the frequency range (EU868), time, and application key. Get the application key from the ChirpStack device setting under `OTAA keys`. After changing anything else you want to and submitting those changes the sensor should connected to ChirpStack through the M2 Gateway. You'll know it successfully connected when the `Activation` tab in the ChirpStack device section has information about the device address and several keys. 
+
+One additional setting we changed was to have the sensor wait to confirm the payload was received by ChirpStack before deleting the old. 
+
+>This is the 2C + 1N Packet Policy setting in the configuration screen shot below. 
+
+While this uses more power, it ensures the sensor confirms receipt of the reading before deleting the measurement onboard the sensor. Initially we set the measurement interval to 60 min but found that took too long and changed it to 15 min.
+
+Below is an example of our weather station configuration completed through the `SenseCap Mate` app:  
+
+![alt text](img/configuration_sensecapMate.png "Sensor Config")
+
+Likewise, this is an example of a sensor measurement as shown through the `SenseCap Mate` app:  
+
+![alt text](img/measurement_sensecapMate.png "Sensor Measurement")
+
+### Reading the Measurements in ChirpStack  
+
+With the codec (payload decoder) applied in ChirpStack and the weather sensor connected, we began recieving measurements logged in the `Events` tab of ChirpStack. Clicking on one of these allows you to see the parsed payload and all measurements. This is a sample parsed payload:  
 
 ![alt text](img/weatherSensorEvents.png)  
 
+While this is neat, by default, ChirpStack only saves 10 readings. We can change this is the ChirpStack configuration but that doesn't do much good as we can't use the data through the ChirpStack interface.  
+
+> ChirpStack assumes you're connecting it with some other capability like a cloud service provider (Google Cloud Platform, Azure, or AWS) or some other system.  
+
+This is where the PostgreSQL server we installed previously will come in handy. ChirpStack uses this to store its application settins (users, device profiles, etc.) but it can also be integrated with PostgreSQL for data storage.
 
 ### Storing Data in PostgreSQL  
 
-It is great to get the data but we need to store it for the long term...
+ChirpStack provides [Documentation](https://www.chirpstack.io/docs/chirpstack/integrations/postgresql.html) on how to configure the integration via ChirpStack's configuration files.  
 
-https://www.chirpstack.io/docs/chirpstack/integrations/postgresql.html  
+In short, to enable the ChirpStack -> PostgreSQL integration there are two steps. First, create the required resources in postgres and second, edit the ChirpStack configuration file with the proper credentials to connect to the database.  
+
+Connect to the postgres server with `sudo -u postgres psql` and then provide the following commands to create a role, password, and database.  
+
+```sql
+-- create role for authentication
+create role chirpstack_integration with login password 'chirpstack_integration';
+
+-- create database
+create database chirpstack_integration with owner chirpstack_integration;
+```
+```psql
+-- exit psql
+\q
+```
+
+Next, open the ChirpStack configuration file with:
+
+`sudo vim /etc/chirpstack/chirpstack.toml`  
+
+Navigate to the bottom of the configuration to find the `[integration]` section. Add `postgresql` to the `enabled` array and add the `[integration.postgresql]` stanza.   
 
 
+```toml
+[integration]
+  enabled=["mqtt","postgresql"]
+
+  [integration.mqtt]
+    server="tcp://localhost:1883/"
+    json=true
+
+  [integration.postgresql]
+    dsn="postgres://chirpstack_integration:chirpstack_integration@localhost/chirpstack_integration?sslmode=disable"
+```
+Replace `chirpstack_integration:chirpstack_integration` with your selected `username:password`.
+
+After making these changes, restart chirpstack service with `sudo systemctl restart chirpstack`.  
+
+After some period of time (15 minutes for us) we saw some records begin to populate in this database. Chirpstack creates several tables (shown below) but our measurement data is in the `event_up` table. 
+
+After connecting to the database with `\c chirpstack_integration` within the postgres commandline interface (`psql`), execute the commend `\dt` to list all tables. 
+
+```
+                         List of relations
+ Schema |            Name            | Type  |         Owner
+--------+----------------------------+-------+------------------------
+ public | __diesel_schema_migrations | table | chirpstack_integration
+ public | event_ack                  | table | chirpstack_integration
+ public | event_integration          | table | chirpstack_integration
+ public | event_join                 | table | chirpstack_integration
+ public | event_location             | table | chirpstack_integration
+ public | event_log                  | table | chirpstack_integration
+ public | event_status               | table | chirpstack_integration
+ public | event_tx_ack               | table | chirpstack_integration
+ public | event_up                   | table | chirpstack_integration
+(9 rows)
+```
+
+Using the `JSON` object referenced previously in the ChirpStack UI, we can see that the `time`, `data`, and `object` fields are of interest to us. We can get these with the following PostgreSQL query:  
+
+```sql
+ SELECT time, data, object FROM event_up LIMIT 1;
+ ```
+ ```
+             time              |                               data                               |                                                          object
+-------------------------------+------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------
+ 2023-09-14 04:13:13.094156+00 | \x0008010000031404f5200500000600000700000000000000000f100012ef0c | {"err": 0.0, "valid": true, "payload": "0008010000031404F5200500000600000700000000000000000F100012EF0C", "messages": []}
+```  
+
+Of note, when the `confirmed` field does not equal `t` we didn't find a payload (parsed JSON). This is likely because there was an error or the transmission did not include this type of data. An example is the one above with an empty `[]` message key. To remove those from our query we can modify it with a `WHERE` claus like below:  
+
+```sql 
+SELECT time, data, object FROM event_up WHERE confirmed = 't' LIMIT 1;
+```
+
+The resultant `object` field is a `jsonb` data type and looks like this:
+
+```json
+{
+  "err": 0.0, 
+  "valid": true, 
+  "payload": "04640101010B003C05A00100C35E0000000000000002002A00000000278C", 
+  "messages": [
+    [
+      {
+        "Battery(%)": 100.0, 
+        "gpsInterval": 86400.0, 
+        "measureInterval": 3600.0, 
+        "Firmware Version": "1.11", 
+        "Hardware Version": "1.1"
+        }
+        ], 
+        [
+          {
+            "type": "Air Temperature", 
+            "measurementId": "4097", 
+            "measurementValue": 19.5
+            },
+          {
+            "type": "Air Humidity", 
+            "measurementId": "4098", 
+            "measurementValue": 94.0
+            }, 
+          {
+            "type": "Light Intensity", 
+            "measurementId": "4099", 
+            "measurementValue": 0.0
+            }, 
+          {
+            "type": "UV Index", 
+            "measurementId": "4190", 
+            "measurementValue": 0.0
+            }, 
+          {
+            "type": "Wind Speed", 
+            "measurementId": "4105", 
+            "measurementValue": 0.0
+            }
+        ], 
+        [
+          {
+            "type": "Wind Direction Sensor", 
+            "measurementId": "4104", 
+            "measurementValue": 42.0
+            }, 
+          {
+            "type": "Rain Gauge", 
+            "measurementId": "4113", 
+            "measurementValue": 0.0
+            }, 
+          {
+            "type": "Barometric Pressure", 
+            "measurementId": "4101", 
+            "measurementValue": 101240.0
+            }
+        ]
+      ]
+    }
+```
+
+This is great but we'd like the data to be organized in a nice rectangular manner to make it easy to query and chart.  
+
+Here comes some PostgreSQL work to restructure the data so we can work with it.  
+
+A few things, because the data constantly gets written to the database, we needed a way that updated regularly. Also, we wanted to limit the amount of duplicated data in the database since this lives on our RaspberryPi and thus has limited storate.  
+
+For these reasons, we opted to codify our data transformation queries into a SQL `View`. This means the transformation will not happen until a call to the view is made and will thus  
+  1) Always represent the full set of data present within the `event_up` table.  
+  2) Take no additional storage space on the device.  
+
+The downside, however, is that we will expend comutational power as we query the view. That is fine for no so we'll move on.  
+
+### Transforming JSON into Rectangular Data in PostgreSQL  
+
+First, here are some pertinent resources I used to develop this solution:  
+
+  * [PostgreSQL Documentation](https://www.postgresql.org/docs/9.4/functions-json.html)  on the json parsing functions, specifically `json_populate_recordset`.  
+  * [Database Stack Exchange](https://dba.stackexchange.com/questions/123053/function-json-populate-record-text-does-not-exist) description of how to make the function work.  
+  * The major components of the final solution in this [Stack Overflow Response](https://stackoverflow.com/a/43914582). I found this answer to be most useful.  
+
+The data from ChirpStack is stored as a `jsonb` data type but the various elements within the json are not specifically typed. For this reason we need to create a data type to tell PostgreSQL how to store the data elements we extract from this json.  
+
+Each of the sensors on our weather station provide measurements in the same format of `type`, `measurementId`, and `measurementValue`. We will describe these data fields in the type with the SQL command below:
+
+```sql
+CREATE TYPE sensor AS (type text, "measurementId" text, "measurementValue" float);
+```  
+
+Now we will select elements of the `event_up` table, expand a portion of the `object` field `jsonb` object, and type them according to the `sensor` type we just created.  
+
+As we saw in the example `json` object above, there are two arrays of measurements. We aren't sure why this is but it probably has something to do with either the weather station manufacturer or the codec we are using in Chirpstack to interpret the data.  
+
+In addition to the expanded json object, we also want to record the time the measurement was taken. Below is the query that does this for one of those arrays.  
+
+```sql
+SELECT 
+ time, 
+ (jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
+FROM event_up 
+WHERE confirmed = 't';
+```
+
+The `->` operator is how we navigate into levels of json objects in PostgreSQL. The final `0` is the index (starting at 0) of the arrays within the `messages` object. This query returns a response like the one below:
+
+```
+             time              |      type       | measurementId | measurementValue
+-------------------------------+-----------------+---------------+------------------
+ 2023-09-14 04:13:20.058726+00 |                 |               |
+ 2023-09-14 04:13:29.299782+00 |                 |               |
+ 2023-09-14 04:14:13.594204+00 |                 |               |
+ 2023-09-14 04:14:52.582875+00 |                 |               |
+ 2023-09-14 04:39:50.355121+00 |                 |               |
+ 2023-09-14 04:39:59.43616+00  |                 |               |
+ 2023-09-14 04:55:05.490106+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:55:05.490106+00 | Air Humidity    | 4098          |               94
+ 2023-09-14 04:55:05.490106+00 | Light Intensity | 4099          |              105
+ 2023-09-14 04:55:05.490106+00 | UV Index        | 4190          |                0
+ 2023-09-14 04:55:05.490106+00 | Wind Speed      | 4105          |                0
+ 2023-09-14 05:10:26.380747+00 | Air Temperature | 4097          |             19.3
+ 2023-09-14 05:10:26.380747+00 | Air Humidity    | 4098          |               95
+ 2023-09-14 05:10:26.380747+00 | Light Intensity | 4099          |              488
+ 2023-09-14 05:10:26.380747+00 | UV Index        | 4190          |                0
+ 2023-09-14 05:10:26.380747+00 | Wind Speed      | 4105          |                0
+```
+
+
+Aside from the few empty rows at the top, this is exactly what we are looking for. To confirm, we will do the same for the second array.
+
+```sql
+SELECT 
+ time, 
+ (jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
+FROM event_up 
+WHERE confirmed = 't';
+```
+Like the first array, this gives us the expected results:
+
+```
+             time              |         type          | measurementId | measurementValue
+-------------------------------+-----------------------+---------------+------------------
+ 2023-09-14 04:13:20.058726+00 | Air Temperature       | 4097          |             19.5
+ 2023-09-14 04:13:20.058726+00 | Air Humidity          | 4098          |               94
+ 2023-09-14 04:13:20.058726+00 | Light Intensity       | 4099          |                0
+ 2023-09-14 04:13:20.058726+00 | UV Index              | 4190          |                0
+ 2023-09-14 04:13:20.058726+00 | Wind Speed            | 4105          |                0
+ 2023-09-14 04:13:29.299782+00 | Air Temperature       | 4097          |             19.5
+ 2023-09-14 04:13:29.299782+00 | Air Humidity          | 4098          |               94
+ 2023-09-14 04:13:29.299782+00 | Light Intensity       | 4099          |                0
+ 2023-09-14 04:13:29.299782+00 | UV Index              | 4190          |                0
+ 2023-09-14 04:13:29.299782+00 | Wind Speed            | 4105          |                0
+ 2023-09-14 04:14:13.594204+00 | Air Temperature       | 4097          |             19.5
+ 2023-09-14 04:14:13.594204+00 | Air Humidity          | 4098          |               94
+ 2023-09-14 04:14:13.594204+00 | Light Intensity       | 4099          |                0
+ 2023-09-14 04:14:13.594204+00 | UV Index              | 4190          |                0
+ 2023-09-14 04:14:13.594204+00 | Wind Speed            | 4105          |                0
+ 2023-09-14 04:14:52.582875+00 | Air Temperature       | 4097          |             19.5
+ ```
+
+Now, we want to combine both of these queries together into the same table for a response. The SQL operator for this is `UNION`. We do this with the following query:  
+
+```sql
+SELECT 
+ time, 
+ (jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
+FROM event_up 
+WHERE confirmed = 't'
+UNION
+SELECT 
+ time, 
+ (jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
+FROM event_up 
+WHERE confirmed = 't';
+```
+
+So that we don't need to write this query every time, we'll save it as a view. When we do this we'll also add order to the table with an `ORDER BY` statement for time and then type. We'll call this view `sensor_data` and create it with the following statement:
+
+```sql
+CREATE VIEW sensor_data 
+ AS SELECT 
+  time, 
+  (jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
+ FROM event_up 
+ WHERE confirmed = 't'
+ UNION
+ SELECT 
+  time, 
+  (jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
+ FROM event_up 
+ WHERE confirmed = 't' 
+ ORDER BY 
+  time, 
+  type;
+```
+Now we can query the view with the following command:
+```sql
+SELECT * FROM sensor_data;
+```
+and, more importantly, make modifiers to it like selecting only the `Air Temperature` measurements with:
+
+```sql
+SELECT * FROM sensor_data WHERE type = 'Air Temperature';
+```  
+which gives the following response:
+
+```
+             time              |      type       | measurementId | measurementValue
+-------------------------------+-----------------+---------------+------------------
+ 2023-09-14 04:13:20.058726+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:13:29.299782+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:14:13.594204+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:14:52.582875+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:39:50.355121+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:39:59.43616+00  | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:55:05.490106+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 05:10:26.380747+00 | Air Temperature | 4097          |             19.3
+ 2023-09-14 05:25:33.130726+00 | Air Temperature | 4097          |             19.3
+ 2023-09-14 05:40:39.188236+00 | Air Temperature | 4097          |             19.2
+ 2023-09-14 05:55:46.124893+00 | Air Temperature | 4097          |             19.6
+ 2023-09-14 05:56:00.464804+00 | Air Temperature | 4097          |             19.6
+ 2023-09-14 06:11:06.806951+00 | Air Temperature | 4097          |             19.8
+ 2023-09-14 06:26:13.662671+00 | Air Temperature | 4097          |             20.4
+ 2023-09-14 06:41:19.414583+00 | Air Temperature | 4097          |               21
+ 2023-09-14 06:56:25.728441+00 | Air Temperature | 4097          |             21.5
+```  
+
+Now we are ready to start interacting with the data!  
 
