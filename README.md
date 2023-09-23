@@ -137,7 +137,7 @@ create extension pg_trgm;
 
 Exit the `psql` tool  
 
-```sql
+```psql
 \q
 ```  
 
@@ -381,7 +381,8 @@ create role chirpstack_integration with login password 'chirpstack_integration';
 
 -- create database
 create database chirpstack_integration with owner chirpstack_integration;
-
+```
+```psql
 -- exit psql
 \q
 ```
@@ -432,6 +433,8 @@ Using the `JSON` object referenced previously in the ChirpStack UI, we can see t
 
 ```sql
  SELECT time, data, object FROM event_up LIMIT 1;
+ ```
+ ```
              time              |                               data                               |                                                          object
 -------------------------------+------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------
  2023-09-14 04:13:13.094156+00 | \x0008010000031404f5200500000600000700000000000000000f100012ef0c | {"err": 0.0, "valid": true, "payload": "0008010000031404F5200500000600000700000000000000000F100012EF0C", "messages": []}
@@ -578,8 +581,8 @@ Aside from the few empty rows at the top, this is exactly what we are looking fo
 
 ```sql
 SELECT 
-	time, 
-	(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
+ time, 
+ (jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
 FROM event_up 
 WHERE confirmed = 't';
 ```
@@ -610,14 +613,14 @@ Now, we want to combine both of these queries together into the same table for a
 
 ```sql
 SELECT 
-	time, 
-	(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
+ time, 
+ (jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
 FROM event_up 
 WHERE confirmed = 't'
 UNION
 SELECT 
-	time, 
-	(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
+ time, 
+ (jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
 FROM event_up 
 WHERE confirmed = 't';
 ```
@@ -633,13 +636,13 @@ CREATE VIEW sensor_data
  WHERE confirmed = 't'
  UNION
  SELECT 
-	time, 
-	(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
+  time, 
+  (jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
  FROM event_up 
  WHERE confirmed = 't' 
  ORDER BY 
   time, 
-	type;
+  type;
 ```
 Now we can query the view with the following command:
 ```sql
