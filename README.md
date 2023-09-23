@@ -415,7 +415,7 @@ After some period of time (15 minutes for us) we saw some records begin to popul
 
 After connecting to the database with `\c chirpstack_integration` within the postgres commandline interface (`psql`), execute the commend `\dt` to list all tables. 
 
-```sql
+```
                          List of relations
  Schema |            Name            | Type  |         Owner
 --------+----------------------------+-------+------------------------
@@ -433,7 +433,7 @@ After connecting to the database with `\c chirpstack_integration` within the pos
 
 Using the `JSON` object referenced previously in the ChirpStack UI, we can see that the `time`, `data`, and `object` fields are of interest to us. We can get these with the following PostgreSQL query:  
 
-```sql
+```
  SELECT time, data, object FROM event_up LIMIT 1;
              time              |                               data                               |                                                          object
 -------------------------------+------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------
@@ -532,9 +532,101 @@ First, here are some pertinent resources I used to develop this solution:
   * [Database Stack Exchange](https://dba.stackexchange.com/questions/123053/function-json-populate-record-text-does-not-exist) description of how to make the function work.  
   * The major components of the final solution in this [Stack Overflow Response](https://stackoverflow.com/a/43914582). I found this answer to be most useful.  
 
+The data from ChirpStack is stored as a `jsonb` data type but the various elements within the json are not specifically typed. For this reason we need to create a data type to tell PostgreSQL how to store the data elements we extract from this json.  
+
+Each of the sensors on our weather station provide measurements in the same format of `type`, `measurementId`, and `measurementValue`. We will describe these data fields in the type with the SQL command below:
+
 ```sql
 CREATE TYPE sensor AS (type text, "measurementId" text, "measurementValue" float);
 ```  
+
+Now we will select elements of the `event_up` table, expand a portion of the `object` field `jsonb` object, and type them according to the `sensor` type we just created.  
+
+As we saw in the example `json` object above, there are two arrays of measurements. We aren't sure why this is but it probably has something to do with either the weather station manufacturer or the codec we are using in Chirpstack to interpret the data.  
+
+In addition to the expanded json object, we also want to record the time the measurement was taken. Below is the query that does this for one of those arrays.  
+
+```sql
+	SELECT 
+		time, 
+		(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
+	FROM event_up 
+  WHERE confirmed = 't';
+```
+
+The `->` operator is how we navigate into levels of json objects in PostgreSQL. The final `0` is the index (starting at 0) of the arrays within the `messages` object. This query returns a response like the one below:
+
+```
+             time              |      type       | measurementId | measurementValue
+-------------------------------+-----------------+---------------+------------------
+ 2023-09-14 04:13:20.058726+00 |                 |               |
+ 2023-09-14 04:13:29.299782+00 |                 |               |
+ 2023-09-14 04:14:13.594204+00 |                 |               |
+ 2023-09-14 04:14:52.582875+00 |                 |               |
+ 2023-09-14 04:39:50.355121+00 |                 |               |
+ 2023-09-14 04:39:59.43616+00  |                 |               |
+ 2023-09-14 04:55:05.490106+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:55:05.490106+00 | Air Humidity    | 4098          |               94
+ 2023-09-14 04:55:05.490106+00 | Light Intensity | 4099          |              105
+ 2023-09-14 04:55:05.490106+00 | UV Index        | 4190          |                0
+ 2023-09-14 04:55:05.490106+00 | Wind Speed      | 4105          |                0
+ 2023-09-14 05:10:26.380747+00 | Air Temperature | 4097          |             19.3
+ 2023-09-14 05:10:26.380747+00 | Air Humidity    | 4098          |               95
+ 2023-09-14 05:10:26.380747+00 | Light Intensity | 4099          |              488
+ 2023-09-14 05:10:26.380747+00 | UV Index        | 4190          |                0
+ 2023-09-14 05:10:26.380747+00 | Wind Speed      | 4105          |                0
+```
+
+
+Aside from the few empty rows at the top, this is exactly what we are looking for. To confirm, we will do the same for the second array.
+
+```sql
+	SELECT 
+		time, 
+		(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
+	FROM event_up 
+  WHERE confirmed = 't';
+```
+Like the first array, this gives us the expected results:
+
+```
+             time              |         type          | measurementId | measurementValue
+-------------------------------+-----------------------+---------------+------------------
+ 2023-09-14 04:13:20.058726+00 | Air Temperature       | 4097          |             19.5
+ 2023-09-14 04:13:20.058726+00 | Air Humidity          | 4098          |               94
+ 2023-09-14 04:13:20.058726+00 | Light Intensity       | 4099          |                0
+ 2023-09-14 04:13:20.058726+00 | UV Index              | 4190          |                0
+ 2023-09-14 04:13:20.058726+00 | Wind Speed            | 4105          |                0
+ 2023-09-14 04:13:29.299782+00 | Air Temperature       | 4097          |             19.5
+ 2023-09-14 04:13:29.299782+00 | Air Humidity          | 4098          |               94
+ 2023-09-14 04:13:29.299782+00 | Light Intensity       | 4099          |                0
+ 2023-09-14 04:13:29.299782+00 | UV Index              | 4190          |                0
+ 2023-09-14 04:13:29.299782+00 | Wind Speed            | 4105          |                0
+ 2023-09-14 04:14:13.594204+00 | Air Temperature       | 4097          |             19.5
+ 2023-09-14 04:14:13.594204+00 | Air Humidity          | 4098          |               94
+ 2023-09-14 04:14:13.594204+00 | Light Intensity       | 4099          |                0
+ 2023-09-14 04:14:13.594204+00 | UV Index              | 4190          |                0
+ 2023-09-14 04:14:13.594204+00 | Wind Speed            | 4105          |                0
+ 2023-09-14 04:14:52.582875+00 | Air Temperature       | 4097          |             19.5
+ ```
+
+Now, we want to combine both of these queries together into the same table for a response. The SQL operator for this is `UNION`. We do this with the following query:  
+
+```sql
+	SELECT 
+		time, 
+		(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
+	FROM event_up 
+  WHERE confirmed = 't'
+  UNION
+  SELECT 
+		time, 
+		(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
+	FROM event_up 
+  WHERE confirmed = 't';
+```
+
+So that we don't need to write this query every time, we'll save it as a view. When we do this we'll also add order to the table with an `ORDER BY` statement for time and then type. We'll call this view `sensor_data` and create it with the following statement:
 
 ```sql
 CREATE VIEW sensor_data 
@@ -542,15 +634,48 @@ CREATE VIEW sensor_data
 		time, 
 		(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
 	FROM event_up 
-	UNION 
-	SELECT time, 
-	(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
+  WHERE confirmed = 't'
+  UNION
+  SELECT 
+		time, 
+		(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 1)).* 
 	FROM event_up 
+  WHERE confirmed = 't' 
 	ORDER BY 
 		time, 
 		type;
 ```
+Now we can query the view with the following command:
+```sql
+SELECT * FROM sensor_data;
+```
+and, more importantly, make modifiers to it like selecting only the `Air Temperature` measurements with:
 
 ```sql
 SELECT * FROM sensor_data WHERE type = 'Air Temperature';
+```  
+which gives the following response:
+
 ```
+             time              |      type       | measurementId | measurementValue
+-------------------------------+-----------------+---------------+------------------
+ 2023-09-14 04:13:20.058726+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:13:29.299782+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:14:13.594204+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:14:52.582875+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:39:50.355121+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:39:59.43616+00  | Air Temperature | 4097          |             19.5
+ 2023-09-14 04:55:05.490106+00 | Air Temperature | 4097          |             19.5
+ 2023-09-14 05:10:26.380747+00 | Air Temperature | 4097          |             19.3
+ 2023-09-14 05:25:33.130726+00 | Air Temperature | 4097          |             19.3
+ 2023-09-14 05:40:39.188236+00 | Air Temperature | 4097          |             19.2
+ 2023-09-14 05:55:46.124893+00 | Air Temperature | 4097          |             19.6
+ 2023-09-14 05:56:00.464804+00 | Air Temperature | 4097          |             19.6
+ 2023-09-14 06:11:06.806951+00 | Air Temperature | 4097          |             19.8
+ 2023-09-14 06:26:13.662671+00 | Air Temperature | 4097          |             20.4
+ 2023-09-14 06:41:19.414583+00 | Air Temperature | 4097          |               21
+ 2023-09-14 06:56:25.728441+00 | Air Temperature | 4097          |             21.5
+```  
+
+Now we are ready to start interacting with the data!  
+
