@@ -547,8 +547,8 @@ In addition to the expanded json object, we also want to record the time the mea
 
 ```sql
 SELECT 
-	time, 
-	(jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
+ time, 
+ (jsonb_populate_recordset(null::sensor,object -> 'messages' -> 0)).* 
 FROM event_up 
 WHERE confirmed = 't';
 ```
