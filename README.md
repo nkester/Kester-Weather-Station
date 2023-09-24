@@ -367,7 +367,11 @@ While this is neat, by default, ChirpStack only saves 10 readings. We can change
 
 This is where the PostgreSQL server we installed previously will come in handy. ChirpStack uses this to store its application settins (users, device profiles, etc.) but it can also be integrated with PostgreSQL for data storage.
 
-### Storing Data in PostgreSQL  
+## Storing and Preparing Data in PostgreSQL  
+
+### Store Sensor Events in ChirpStack to PostgreSQL
+
+Confusingly, the previous steps we took to configure ChirpStack with Postgres was to power the ChirpStack Server and it's configurations (users, device profiles, etc.). Now we need to setup an integration between the ChirpStack Server and PostgreSQL to store the events.
 
 ChirpStack provides [Documentation](https://www.chirpstack.io/docs/chirpstack/integrations/postgresql.html) on how to configure the integration via ChirpStack's configuration files.  
 
@@ -641,7 +645,7 @@ CREATE VIEW sensor_data
  FROM event_up 
  WHERE confirmed = 't' 
  ORDER BY 
-  time, 
+  time desc, 
   type;
 ```
 Now we can query the view with the following command:
@@ -677,4 +681,102 @@ which gives the following response:
 ```  
 
 Now we are ready to start interacting with the data!  
+
+## Interacting with the Data  
+
+Now that we have data formatted in the way we want it, we need to get to the data remotely with a user that has limited priviledges.  
+
+### Configuring PostgreSQL to Accept Remote Connections
+
+First, getting to the data...by default, PostgreSQL only allows connections coming from the `localhost`. This protects it from being accessed by other computers. To this point we've interacted with the database via the command line on our RaspberryPi.  
+
+Here are some references I found useful. Of note, I didn't want to make the database accessible to anyone from anywhere (any IP address) so I've confined it to just IP addresses within my home network.  
+  * [Good step-by-step instructions](https://tecadmin.net/postgresql-allow-remote-connections/) <-There is an issue in these instructions  
+    *  [A solution to the issue](https://stackoverflow.com/a/18580598)  
+  * [Explanation of a CIDR block](https://aws.amazon.com/what-is/cidr/)  
+  * [Check the status of all pg services](https://dba.stackexchange.com/a/320672)
+
+We need to change two configuration files: `postgresql.conf` and `pg_hba.conf`. 
+
+Find where the `postgresql.conf` file is by running the following command on the RaspberryPi command line: `sudo -u postgres psql -c "SHOW config_file;"` For me, the file is located at ` /etc/postgresql/14/main/postgresql.conf`.  
+
+Open the file with `sudo vim /etc/postgresql/14/main/postgresql.conf`, find the `listen_addresses` configuration and change it from `listen_addresses = 'localhost'` to `listen_addresses = '*'`.  
+
+Next, open the `pg_hba.conf` file from the same directory with `sudo vim /etc/postgresql/14/main/pg_hba.conf`  
+
+This file specifies which IP addresses are allowed to connect. Unlike the `techadmin.net` instructions above, I'm not going to specify anything from IPV6 addresses because I don't use those (the `::/0` line). Likewise, I don't want to allow any IP address to connect, which is what the `0.0.0.0/0` specification allows. Instead, I want only those addresses from within my home network to be able to connect. To do this we'll specify `192.168.3.0/24`
+
+Our entry in the configuration file looked like this:
+
+```conf
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+host    all             all             192.168.3.0/24               md5
+```  
+
+Now that we have the configuration files updated we need to restart the postgres service with `sudo systemctl restart postgresql` and then check on its status with `sudo systemctl status 'postgresql*'`. The response from this should be one service `active (running)` and another `active (exited)`. 
+
+The final step is to allow port `5432`, PostgreSQL's default port, through the Ubuntu firewall. Do this with `sudo ufw allow 5432`.  
+
+### Create a Limited Permission User  
+
+Before disconnecting from the RaspberryPi, we will get back into PostgreSQL to create a new user that we'll use to query the database remotely.  
+
+Connect to PostgreSQL as normal with `sudo -u postgres psql` and then connect to the `chirpstack_integration` database with `\c chirpstack_integration`. I'll create a new role called `dataview` and give it a password authentication with:  
+```sql
+CREATE ROLE dataview WITH LOGIN PASSWORD '<my password>';
+```  
+The issue now, however, is that I created my view previously as the `postgres` role. This new user, by default, does not have permissions to these other resources. I'll change that by granting `dataview` "SELECT ON" permissions to that view with:
+
+```sql
+GRANT SELECT ON sensor_data TO dataview;
+```  
+
+Now we should be good to go.  
+
+### Query the Database Remotely  
+
+My analytic tool of choice is `R` so now from my personal computer I'll use `R` to query the `chirpstack_integration` database, specifically the `sensor_data` view we created.  
+
+I connect to the database with the following script:
+
+```R
+library(RPostgreSQL)
+library(DBI)
+
+db <- 'chirpstack_integration'
+host <- '192.168.3.54'
+port <- '5432'
+user <- 'dataview'
+password <- '<dataview password>'
+
+
+con <- DBI::dbConnect(drv = RPostgreSQL::PostgreSQL(),
+                      dbname = db,
+                      host = host,
+                      port = port,
+                      user = user,
+                      password = password)
+
+DBI::dbGetQuery(conn = con,
+                statement = "SELECT * FROM sensor_data WHERE type = 'Air Humidity' ORDER BY time desc LIMIT 10")                      
+```  
+
+This query selects all columns from the `sensor_data` view but returns only the rows where `Air Humidity` is the `type` and it limits it to 10 responses, starting with the most recent.  
+
+The result is:  
+```
+                  time         type measurementId measurementValue
+1  2023-09-24 10:04:26 Air Humidity          4098               49
+2  2023-09-24 09:49:20 Air Humidity          4098               45
+3  2023-09-24 09:34:13 Air Humidity          4098               53
+4  2023-09-24 09:19:07 Air Humidity          4098               51
+5  2023-09-24 08:48:54 Air Humidity          4098               61
+6  2023-09-24 08:33:48 Air Humidity          4098               60
+7  2023-09-24 08:33:35 Air Humidity          4098               60
+8  2023-09-24 08:18:27 Air Humidity          4098               70
+9  2023-09-24 08:03:20 Air Humidity          4098               71
+10 2023-09-24 07:48:14 Air Humidity          4098               75
+```  
+
+Which is what I expect. Now we can start building charts and tools!  
 
