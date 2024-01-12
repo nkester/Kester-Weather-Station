@@ -1,5 +1,18 @@
 # The Kester Weather Station
 
+Table of Contents:  
+  * [Why](#why)  
+  * [High Level Diagram](#high-level-diagram)  
+  * [References](#references)  
+  * [The Approach](#the-approach)  
+  * [The Equipment](#the-equipment)  
+  * [Setting up the Raspberry Pi](#setting-up-the-raspberry-pi)  
+  * [Setting up Chirpstack](#setting-up-chirpstack)  
+  * [Setting up Chirpstack Gateway Bridge](#setting-up-chirpstack-gateway-bridge)  
+  * [Connect the Gateway](#connect-the-gateway)  
+  * [Storing and Preparing Data in PostgreSQL](#storing-and-preparing-data-in-postgresql)  
+  * [Interacting with the Data](#interacting-with-the-data)  
+
 ## Why
 
 ...Why not? 
@@ -187,7 +200,7 @@ sudo cp /etc/resolv.conf etc/resolv.conf-2023-07-17
 echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
 ```
 
-## Install and Configure ChirpStack Gateway Bridge  
+## Setting up ChirpStack Gateway Bridge  
 
 Finally we are to the point we can install the ChirpStack Gateway Bridge.  
 
