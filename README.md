@@ -1,5 +1,8 @@
 # The Kester Weather Station
 
+Version: beta-2.0
+Previous Versions: [1](https://github.com/nkester/Kester-Weather-Station/tree/v-1.0)
+
 Table of Contents:  
   * [Why](#why)  
   * [High Level Diagram](#high-level-diagram)  
