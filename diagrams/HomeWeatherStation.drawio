@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2024-01-12T14:49:00.613Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" etag="cI1bSSl4Z2pn106z4uEg" version="22.1.17" type="gitlab" pages="2">
+<mxfile host="app.diagrams.net" modified="2024-01-13T06:15:35.576Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" etag="HLqEypUg_qKAe4HQ6yYO" version="22.1.17" type="gitlab" pages="2">
   <diagram id="i0oEYvOnRiqcVp2mykJb" name="Seeed Solution">
     <mxGraphModel dx="2173" dy="1066" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="850" math="0" shadow="0">
       <root>
@@ -59,15 +59,6 @@
         </mxCell>
         <mxCell id="d0J_f9ugfO4_sDHiWpO2-17" value="Raspberry Pi 4 Single Board Computer (SBC)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="912" y="310" width="160" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="d0J_f9ugfO4_sDHiWpO2-18" value="" style="html=1;outlineConnect=0;fillColor=#CCCCCC;strokeColor=#6881B3;gradientColor=none;gradientDirection=north;strokeWidth=2;shape=mxgraph.networks.comm_link_edge;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="d0J_f9ugfO4_sDHiWpO2-1" target="d0J_f9ugfO4_sDHiWpO2-4" edge="1">
-          <mxGeometry width="100" height="100" relative="1" as="geometry">
-            <mxPoint x="772" y="520" as="sourcePoint" />
-            <mxPoint x="872" y="420" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="d0J_f9ugfO4_sDHiWpO2-19" value="Cabled Ethernet connection" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=15;fontStyle=0" parent="1" vertex="1">
-          <mxGeometry x="752" y="360" width="130" height="30" as="geometry" />
         </mxCell>
         <mxCell id="8E8cv9osXpaqFu7mEsLP-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="d0J_f9ugfO4_sDHiWpO2-20" target="8E8cv9osXpaqFu7mEsLP-2" edge="1">
           <mxGeometry relative="1" as="geometry" />
@@ -160,6 +151,11 @@
         <mxCell id="zCOZjgESWSdnmEhW37z4-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="d0J_f9ugfO4_sDHiWpO2-20" target="zCOZjgESWSdnmEhW37z4-5">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
+        <mxCell id="zCOZjgESWSdnmEhW37z4-24" value="Publish to Pub/Sub &quot;weather&quot; &lt;br&gt;topic on each event" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="zCOZjgESWSdnmEhW37z4-13">
+          <mxGeometry x="-0.0495" y="-3" relative="1" as="geometry">
+            <mxPoint x="-17" as="offset" />
+          </mxGeometry>
+        </mxCell>
         <mxCell id="zCOZjgESWSdnmEhW37z4-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="zCOZjgESWSdnmEhW37z4-16" target="zCOZjgESWSdnmEhW37z4-7">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
@@ -181,6 +177,35 @@
           <mxGeometry width="30" height="24" relative="1" as="geometry">
             <mxPoint x="15" y="18" as="offset" />
           </mxGeometry>
+        </mxCell>
+        <mxCell id="zCOZjgESWSdnmEhW37z4-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="1" source="d0J_f9ugfO4_sDHiWpO2-1" target="d0J_f9ugfO4_sDHiWpO2-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="zCOZjgESWSdnmEhW37z4-26" value="LoRaWAN&amp;nbsp; encoded local &lt;br&gt;network message traffic (wireless" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="zCOZjgESWSdnmEhW37z4-25">
+          <mxGeometry x="0.1505" y="-4" relative="1" as="geometry">
+            <mxPoint x="-8" y="14" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="zCOZjgESWSdnmEhW37z4-32" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/800px-Python-logo-notext.svg.png;" vertex="1" parent="1">
+          <mxGeometry x="1446" y="513.1049999999999" width="30" height="32.89" as="geometry" />
+        </mxCell>
+        <mxCell id="zCOZjgESWSdnmEhW37z4-33" value="&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;weatherPubsubTransformBigQueryWrite.py&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;&lt;font color=&quot;#999999&quot;&gt;python 3.12&lt;/font&gt;&lt;/span&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=1;points=[];autosize=1;strokeColor=none;fillColor=none;movable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" vertex="1" parent="1">
+          <mxGeometry x="1475" y="509.54999999999995" width="250" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="zCOZjgESWSdnmEhW37z4-28" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/800px-Python-logo-notext.svg.png;" vertex="1" parent="1">
+          <mxGeometry x="1446" y="216.54999999999998" width="30" height="32.89" as="geometry" />
+        </mxCell>
+        <mxCell id="zCOZjgESWSdnmEhW37z4-29" value="&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;weatherPubsubTransformJsonCloudStorage.py&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;&lt;font color=&quot;#999999&quot;&gt;python 3.12&lt;/font&gt;&lt;/span&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1475" y="212.99499999999998" width="280" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="zCOZjgESWSdnmEhW37z4-34" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/800px-Python-logo-notext.svg.png;" vertex="1" parent="1">
+          <mxGeometry x="2024" y="623.555" width="30" height="32.89" as="geometry" />
+        </mxCell>
+        <mxCell id="zCOZjgESWSdnmEhW37z4-35" value="&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;weatherPubsubTransformBigQueryWrite.py&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;&lt;font color=&quot;#999999&quot;&gt;python 3.12&lt;/font&gt;&lt;/span&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=1;points=[];autosize=1;strokeColor=none;fillColor=none;movable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" vertex="1" parent="1">
+          <mxGeometry x="2053" y="620" width="250" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="zCOZjgESWSdnmEhW37z4-36" value="function_1: PubSub trigger, write to FireStore (delete)&lt;br&gt;temp_function: HTTPS trigger, return a query response as text payload (delete after saving)&lt;br&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1570" y="710" width="510" height="40" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
