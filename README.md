@@ -16,6 +16,10 @@ Table of Contents:
   * [Storing and Preparing Data in PostgreSQL](#storing-and-preparing-data-in-postgresql)  
   * [Interacting with the Data](#interacting-with-the-data)  
 
+**The following portions describe integration with Google Cloud Platform (GCP)**  
+
+  * [Configure a Chirpstack Integration with Google Pub/Sub](#configure-a-chirpstack-integration-with-google-pubsub)
+
 ## Why
 
 ...Why not? 
@@ -796,3 +800,30 @@ The result is:
 
 Which is what I expect. Now we can start building charts and tools!  
 
+### Visualizing the Data  
+
+Now that we have a local database with our data extracted into a rectangular dataset we can build tools to explore and visualize it. That work is beyond the scope of this project and is located in the projects below:  
+
+  * `Kester Weather Visualization Site`  
+    * Private: https://gitlab.com/nkester-projects/2023_kesterkids_weatherstation/kester-weather-visualization-site  
+    * Public: https://github.com/nkester/Kester-Weather-Visualization-Site  
+
+The `v-1.x` tag series of tags focus on static visualization sites built from data extracted from the local database and bound into the website. The `v-2.x` tag series focus on similar visualizations based on cloud based data which allows users to interactively query the data. The `v-1.x` approach is limited by the size of the dataset so at some point we can't include all the data we've collected. The `v-2.x` approach solves this but is less portable (I can't email the html file to you).  
+
+Our intent is to implement new visualizations in both the `v-1.x` and `v-2.x` appraochs in the future.  
+
+The following sections describe how we integrate cloud services into this project.
+
+## Configure a Chirpstack Integration with Google Pub/Sub  
+
+In the previous steps we've focused on collecting, storing, and interacting with our weather station data locally. Next we are expanding out to leverage Cloud Computing solutions. Specifically, we've decided to use Google Cloud Platform.  
+
+> Here is [Google Cloud Platform](https://cloud.google.com/)  
+
+Google Pub/Sub is a scalable cloud messaging service. Generally, it is a way to decouple data producers with data consumers. It is centered around topics to which data producers publish messages and that data consumers monitor for new data to consume. In terms of systems architecture, it decouples data producers from data consumers. By doing this, if a data consumer is offline for some reason and then re-connects, it is able to consume messages it missed while offline. This is more robust than point-to-point solutions which fail if both ends (producer and consumer) are not both connected at the same time.  
+
+> Learn more at the [Pub/Sub Google Docs Page](https://cloud.google.com/pubsub/docs/overview)  
+
+### Set up a Google Project  
+
+First and foremost, we must establish a project in Google Cloud Platform. This is important because all resources we create a held within this project. I'll call my project `weather station`.  
