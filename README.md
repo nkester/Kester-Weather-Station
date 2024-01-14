@@ -818,12 +818,33 @@ The following sections describe how we integrate cloud services into this projec
 
 In the previous steps we've focused on collecting, storing, and interacting with our weather station data locally. Next we are expanding out to leverage Cloud Computing solutions. Specifically, we've decided to use Google Cloud Platform.  
 
-> Here is [Google Cloud Platform](https://cloud.google.com/)  
+> Here is main [Google Cloud Platform (GCP)](https://cloud.google.com/) page.  
+> Get to [GCP Console](https://console.cloud.google.com/) here to create projects, interact with GCP resources, etc.
 
-Google Pub/Sub is a scalable cloud messaging service. Generally, it is a way to decouple data producers with data consumers. It is centered around topics to which data producers publish messages and that data consumers monitor for new data to consume. In terms of systems architecture, it decouples data producers from data consumers. By doing this, if a data consumer is offline for some reason and then re-connects, it is able to consume messages it missed while offline. This is more robust than point-to-point solutions which fail if both ends (producer and consumer) are not both connected at the same time.  
+### What is Google Pub/Sub and Why Use It?
+
+Google Pub/Sub is a scalable cloud messaging service. It is compareable to Amazon Web Service's Simple Notification Service (SNS) and Microsoft Azure's Service Bus.  
+
+Generally, it is a way to decouple data producers from data consumers. It is centered around topics to which data producers publish messages and that data consumers monitor for new data to consume. By doing this, if a data consumer is offline for some reason and then re-connects, it is able to consume messages it missed while offline. This is more robust than point-to-point solutions which fail if both ends (producer and consumer) are not both connected at the same time.  
 
 > Learn more at the [Pub/Sub Google Docs Page](https://cloud.google.com/pubsub/docs/overview)  
 
 ### Set up a Google Project  
 
-First and foremost, we must establish a project in Google Cloud Platform. This is important because all resources we create a held within this project. I'll call my project `weather station`.  
+First and foremost, we must establish a project in Google Cloud Platform. This is important because all resources we create are contained within this project. I'll call my project `weather station`.  
+
+### Configure Pub/Sub  
+
+Create a Pub/Sub Topic at the [Gloud Pub/Sub Console](https://console.cloud.google.com/cloudpubsub). Give the topic a descriptive name, I called mine `weatherMeasures`.  
+
+Next, in order for ChirpStack to publish messages to this topic it needs to have permissions. To do this, we will go to the [Identity and Access Management (IAM) console](https://console.cloud.google.com/iam-admin/iam) in GCP to create a service account with the specific permissions ChirpStack requires.  
+
+Create a service account in the [Service Account console](https://console.cloud.google.com/iam-admin/serviceaccounts). I gave it the name `Chirpstack Publisher` and an explanatory description. Select `Create and Continue` and then choose a role. This role will give the service account the authority to do certain things. We only want it to publish to Pub/Sub so I'll only add the `Pub/Sub Publisher` role.  
+
+Confirm that the service account was properly applied to Pub/Sub by going back to that console, selecting the topic (blue box) and looking at the permissions tab to the right. There should be a portion named `Pub/Sub Publisher` that lists the service account just created in it.  
+
+### Configure the ChirpStack GCP Pub/Sub integration  
+
+
+
+In the IAM console for the `weather station` project, select "Grant Access". In the next screen, we created a new principle named `ChirpStack Publisher`  
