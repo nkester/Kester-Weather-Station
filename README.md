@@ -839,12 +839,44 @@ Create a Pub/Sub Topic at the [Gloud Pub/Sub Console](https://console.cloud.goog
 
 Next, in order for ChirpStack to publish messages to this topic it needs to have permissions. To do this, we will go to the [Identity and Access Management (IAM) console](https://console.cloud.google.com/iam-admin/iam) in GCP to create a service account with the specific permissions ChirpStack requires.  
 
-Create a service account in the [Service Account console](https://console.cloud.google.com/iam-admin/serviceaccounts). I gave it the name `Chirpstack Publisher` and an explanatory description. Select `Create and Continue` and then choose a role. This role will give the service account the authority to do certain things. We only want it to publish to Pub/Sub so I'll only add the `Pub/Sub Publisher` role.  
+Create a service account in the [Service Account console](https://console.cloud.google.com/iam-admin/serviceaccounts). I gave it the name `Chirpstack Publisher` and an explanatory description. Select `Create and Continue` and then choose a role. This role will give the service account the authority to do certain things. We only want it to publish to Pub/Sub, so I'll only add the `Pub/Sub Publisher` role.  
 
 Confirm that the service account was properly applied to Pub/Sub by going back to that console, selecting the topic (blue box) and looking at the permissions tab to the right. There should be a portion named `Pub/Sub Publisher` that lists the service account just created in it.  
 
+![alt text](img/pubSub_permissions.png "Pub/Sub Permissions Settings")  
+
 ### Configure the ChirpStack GCP Pub/Sub integration  
 
+In order to set up a ChirpStack GCP Pub/Sub Integration, I had to interact through the web UI. because I couldn't find any instructions describing how to configure the integration via the CLI. The [ChirpStack documentation on GCP integration](https://www.chirpstack.io/docs/chirpstack/integrations/gcp-pub-sub.html) is not very helpful. This is how I got it to work:  
 
+On the Web UI, navigate to the `Tenant -> Application -> Integrations -> GCP Pub/Sub`. The page should look like this:    
 
-In the IAM console for the `weather station` project, select "Grant Access". In the next screen, we created a new principle named `ChirpStack Publisher`  
+![alt text](img/chirpstack_webui_gcpPubsubIntegration.png "ChirpStack GCP Pub/Sub Integration")  
+
+Create a new GCP Integration in which the "Payload encoding" is "JSON", the "GCP project ID" is that of the GCP project we just worked with in the previous step.  
+>Note: Ensure this is not the name but the full ID which will likely replace spaces with `-` and have a set of numbers at the end.  
+
+The topic name is the name you set up previously.  
+>Note: Confusingly, **do not use** the topic name provided in your GCP Pub/Sub Console. This includes the project `projects/<project ID>/topics/<topic ID>`. Instead, use only the plain topic ID in the `Topic ID` column of the [GCP Pub/Sub Console](https://console.cloud.google.com/cloudpubsub/topic).  
+
+Finally, we need the service account credentials for the `Chirpstack Publisher` principle we created in the previous section.  Within the IAM & Admin GCP Product, navigate to the [Service Account Section](https://console.cloud.google.com/iam-admin/serviceaccounts/).  
+
+Click on the `Chirpstack Publisher` email and then the `Keys` tab. Select `Add Key` and `Create new key`. This should give an option to create a `JSON` or `P12` key, choose the `JSON` format.  
+
+![alt text](img/service_account_key.png "Creating a new Service Account Key")  
+
+This will download a new JSON Keyfile to your computer.  
+>This is the only time this file will be generated so don't lose it.  
+
+Copy the contents of the file as is (including the leading and trailing `{ }`) and paste it into the final section of the Chirpstack GCP Integration configuration.  
+
+The final configuration should look something like this:
+
+![alt text](img/chirpstack_webui_gcpPubsubIntegrationConfig.png "ChirpStack GCP Pub/Sub Integration")
+
+At this point, each time the weather station provides a measurement. You can check that this is happening by going to the topic's `Metrics` section. You should see a spike around when each weather station measurement is recorded.  
+
+![alt text](img/pubSub_publishedMessages.PNG "Metrics section")  
+
+The way Pub/Sub works though, this only gets the data to GCP. How we need to establish a subscriber to do something with that data. If not, it is not retained and will be deleted.  
+
