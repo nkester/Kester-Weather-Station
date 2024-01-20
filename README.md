@@ -18,7 +18,10 @@ Previous Versions: [1](https://github.com/nkester/Kester-Weather-Station/tree/v-
 
 **The following portions describe integration with Google Cloud Platform (GCP)**  
 
-  * [Configure a Chirpstack Integration with Google Pub/Sub](#configure-a-chirpstack-integration-with-google-pubsub)
+  * [Configure a Chirpstack Integration with Google Pub/Sub](#configure-a-chirpstack-integration-with-google-pubsub)  
+  * [GCP References](#gcp-references)  
+  * [Store Pub/Sub Messages to Google Cloud Storage](#store-chirpstack-published-messages-to-google-cloud-storage)  
+  * [Store Pub/Sub Messages to Google BigQuery](#store-chirpstack-published-messages-to-google-bigquery)
 
 ## Why
 
@@ -898,4 +901,69 @@ At this point, each time the weather station provides a measurement. You can che
 
 The way Pub/Sub works though, this only gets the data to GCP. How we need to establish a subscriber to do something with that data. If not, it is not retained and will be deleted.  
 
-[Return to TOC](#table-of-contents)
+[Return to TOC](#table-of-contents)  
+
+## GCP References
+
+In this section I've consolidated various references I found useful when interacting with GCP references. Some are repeated in the sections I use them in. Some are only referenced here.  
+
+### GCP Documentation  
+  * [Google Docs: What is Cloud Storage](https://cloud.google.com/storage/docs/introduction)  
+  * [Google Docs: What is Cloud Functions](https://cloud.google.com/functions/docs/concepts/overview)  
+  * [Google Cloud Function Triggers](https://cloud.google.com/functions/docs/calling#2nd-gen-triggers)  
+  * [Google Cloud Function Execution Environments (runtimes)](https://cloud.google.com/functions/docs/concepts/execution-environment)
+
+### Function Development  
+  * [Medium: GCP - Cloud Functions - Develop it the right way](https://medium.com/google-cloud/gcp-cloud-functions-develop-it-the-right-way-82e633b07756)  
+  * [SO: Python Flask App Using Google Cloud Functions](https://stackoverflow.com/questions/62654837/python-flask-app-using-google-cloud-functions)  
+  * [Medium: Cloud Run and Cloud Functions](https://medium.com/google-cloud/cloud-run-and-cloud-function-what-i-use-and-why-12bb5d3798e1)
+
+
+### General  
+
+  * [Google Blog: Microservices Architecture on Google Cloud Platform](https://cloud.google.com/blog/topics/developers-practitioners/microservices-architecture-google-cloud)  
+  * [Google Blog: Serverless from the Ground Up - Part 1](https://cloud.google.com/blog/products/serverless/serverless-from-the-ground-up-building-a-simple-microservice-with-cloud-functions-part-1)
+
+[Return to TOC](#table-of-contents)  
+
+## Store ChirpStack Published Messages to Google Cloud Storage  
+
+The first thing I want to do with the messages published to my Pub/Sub topic is to simply store them in a Google Cloud Storage bucket. This ensures that I don't lose the data and it gives me the opportunity to learn how the GCP products work.  
+
+I will use two GCP products: `Google Cloud Storage` and `Google Cloud Functions`. In the following sections I'll describe what each product is and then how I'm integrating them. 
+
+### What is Google Cloud Storage  
+
+According to the [documentation](https://cloud.google.com/storage/docs/introduction):  
+
+>"Cloud Storage is a service for storing your objects in Google Cloud. An object is an immutable piece of data consisting of a file of any format. You store objects in containers called buckets."
+
+So, Cloud Storage is just a place to save files and a bucket allows us to manage permissions and associate files with a specific project, etc.  
+
+This is a link to the [GCP Cloud Storage console](https://console.cloud.google.com/storage)
+
+### What is Google Cloud Functions
+
+According to the [documentation](https://cloud.google.com/functions/docs/concepts/overview):  
+
+> "Google Cloud Functions is a serverless execution environment for building and connecting cloud services."  
+
+This is useful for me because serverless means I only pay when the function is executed rather than for maintaining a server all the time.  
+
+Google Cloud Functions are triggered through several means. The one that is applicable to this operation is the event trigger. We can configure that event to be a Pub/Sub publishing event. This means that I can write a Cloud Function that executes every time a message is published to a specific Pub/Sub topic. Here is information on [Google Cloud Function Triggers](https://cloud.google.com/functions/docs/calling#2nd-gen-triggers)  
+
+Google Cloud Functions operate on several [runtimes](https://cloud.google.com/functions/docs/concepts/execution-environment) or programming languages. The service provides several versions of: `python`, `Go`, `Node.js`, `Java`, etc. Of those, I am most comfortable with `python` so I'll use that in all my work. 
+
+>Note: We can use other runtimes by providing our own container image to `Cloud Run`. I could use this approach to use `R` but to reduce complexity I'll stick with the built in `python` runtime for `Cloud Functions`.  
+
+Because I plan to use `python` as the execution environment (specifically, `python 3.12`), I need to become acquainted with the 
+
+### Using Google Cloud Functions to store data in Google Cloud Storage
+
+
+
+[Return to TOC](#table-of-contents)  
+
+## Store ChirpStack Published Messages to Google BigQuery
+
+[Return to TOC](#table-of-contents)  
