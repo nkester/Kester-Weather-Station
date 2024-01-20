@@ -3,7 +3,7 @@
 Version: beta-2.0
 Previous Versions: [1](https://github.com/nkester/Kester-Weather-Station/tree/v-1.0)
 
-Table of Contents:  
+### Table of Contents:  
   * [Why](#why)  
   * [High Level Diagram](#high-level-diagram)  
   * [References](#references)  
@@ -27,10 +27,12 @@ Table of Contents:
 Through this project the kids can learn basics of sensors in the real world, wireless networks, databases, and the power of cloud technologies. At the end, they will be able to point their friends and family from around the world to a website to see how hot it is, how much rain we've gotten, the air quality, etc. near their home. 
 
 ## High Level Diagram  
-
+  
 The diagram below show, at a high level, what we want to set up. Essentially, we want to have one SEEED sensor (to start), the 8-in-1 Weather sensor, that is connected to a computer inside the house and communicates over a Long Range Wide Area Network (LoRaWAN). The sensor will connect to a LoRaWAN gateway that will convert the wireless communication into a digital, computer readable format. That will then connect to a ChirpStack server on our local Raspberry Pi computer. This ChirpStack server will feed the data recieved from the sensor into a PostgreSQL Database stored on the Raspberry Pi. The Raspberry Pi will then push that data periodically to a Google Cloud Platform (GCP) managed database (likely PostgreSQL initially for ease of use). Finally, we will create a static web-page using Quarto and Observable JS, deployed to Google Firebase to query the GCP database and chart the results.
 
 ![alt text](img/SeeedSolutionDiagram.png "Seeed Solution Diagram")  
+
+[Return to TOC](#table-of-contents)
 
 ## References  
 
@@ -52,13 +54,15 @@ The following are links to resources we will use to set up the components show i
       * Using Observable JS: [How to use Observable JS in Quarto](https://quarto.org/docs/interactive/ojs/#overview)  
       * Accessing data. You can do this in R or Python through an API call and then pass it to observable during render but this doesn't make the webpage interactive with current data. You can also call Firestore directly from observable JS which is probably the way to go. [Quarto - Data Sources](https://quarto.org/docs/interactive/ojs/data-sources.html#overview).  
       * [Google Cloud FireStore REST API documentation](https://firebase.google.com/docs/firestore/use-rest-api). This walks us through how we can query the FireStore collection via an REST API with a token.  
-      * [Interacting with Data from Observable JS](https://observablehq.com/@observablehq/introduction-to-data?collection=@observablehq/notebook-fundamentals#apis) 
+      * [Interacting with Data from Observable JS](https://observablehq.com/@observablehq/introduction-to-data?collection=@observablehq/notebook-fundamentals#apis)  
 
+[Return to TOC](#table-of-contents)  
 
 ## The Approach  
 
-I decided to take this approach rather than building our own sensors because it allows us to get a prototype up and operational quicker so we can see how the various components work. If we took the approach of building components ourselves, we would have gotten mired in figuring out how to deploy them into the environment while protecting them from corrosion, etc. These Seeed sensors do that for us and provide the networking required to make it work. In a future project I'd like to get them into buiding the circuits, etc. 
+I decided to take this approach rather than building our own sensors because it allows us to get a prototype up and operational quicker so we can see how the various components work. If we took the approach of building components ourselves, we would have gotten mired in figuring out how to deploy them into the environment while protecting them from corrosion, etc. These Seeed sensors do that for us and provide the networking required to make it work. In a future project I'd like to get them into buiding the circuits, etc.  
 
+[Return to TOC](#table-of-contents)
 
 ## The Equipment  
 
@@ -72,6 +76,8 @@ This is the final list of equipment:
     * SeeedStudio SenseCAP M2 LoRaWAN Indoor Gateway  
       * [M2 Quick Start](./documents/Quick%20Start%20for%20SenseCAP%20M2%20Gateway%20%26%20Sensors.pdf)
       * [Connecting the M2 to ChirpStack](./documents/Connect_M2_Multi-Platform_Gateway_to_ChirpStack.pdf)  
+
+[Return to TOC](#table-of-contents)
 
 ## Setting up the Raspberry Pi  
 
@@ -88,6 +94,8 @@ sudo apt upgrade -y
 ```  
 
 At this point we were ready to start installing the required components for Chirpstack.  
+
+[Return to TOC](#table-of-contents)  
 
 ## Setting up Chirpstack  
 
@@ -205,7 +213,9 @@ IF the `sudo apt update` command above produces errors or you get a lot of `Ign`
 ```
 sudo cp /etc/resolv.conf etc/resolv.conf-2023-07-17
 echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
-```
+```  
+
+[Return to TOC](#table-of-contents)
 
 ## Setting up ChirpStack Gateway Bridge  
 
@@ -292,7 +302,9 @@ sudo journalctl -f -n 100 -u chirpstack
 
 These logs showed many errors where `chirpstack` tried to connect to all the regions listed. Looking into the `chirpstack` config file at `/etc/chirpstack/chirpstack.toml` all regions were enabled. I commented out all but `eu868` but this did not solve the issue. I think we will get there at the next step when we configure `chirpstack`.  
 
-At this point we can access the Chirpstack Server at `http://localhost:8080` or from within the home network at `http://<raspberry pi IP address>:8080`
+At this point we can access the Chirpstack Server at `http://localhost:8080` or from within the home network at `http://<raspberry pi IP address>:8080`  
+
+[Return to TOC](#table-of-contents)
 
 ## Connect the Gateway  
 
@@ -385,7 +397,9 @@ While this is neat, by default, ChirpStack only saves 10 readings. We can change
 
 > ChirpStack assumes you're connecting it with some other capability like a cloud service provider (Google Cloud Platform, Azure, or AWS) or some other system.  
 
-This is where the PostgreSQL server we installed previously will come in handy. ChirpStack uses this to store its application settins (users, device profiles, etc.) but it can also be integrated with PostgreSQL for data storage.
+This is where the PostgreSQL server we installed previously will come in handy. ChirpStack uses this to store its application settins (users, device profiles, etc.) but it can also be integrated with PostgreSQL for data storage.  
+
+[Return to TOC](#table-of-contents)  
 
 ## Storing and Preparing Data in PostgreSQL  
 
@@ -702,6 +716,8 @@ which gives the following response:
 
 Now we are ready to start interacting with the data!  
 
+[Return to TOC](#table-of-contents)  
+
 ## Interacting with the Data  
 
 Now that we have data formatted in the way we want it, we need to get to the data remotely with a user that has limited priviledges.  
@@ -812,7 +828,9 @@ The `v-1.x` tag series of tags focus on static visualization sites built from da
 
 Our intent is to implement new visualizations in both the `v-1.x` and `v-2.x` appraochs in the future.  
 
-The following sections describe how we integrate cloud services into this project.
+The following sections describe how we integrate cloud services into this project.  
+
+[Return to TOC](#table-of-contents)  
 
 ## Configure a Chirpstack Integration with Google Pub/Sub  
 
@@ -876,7 +894,8 @@ The final configuration should look something like this:
 
 At this point, each time the weather station provides a measurement. You can check that this is happening by going to the topic's `Metrics` section. You should see a spike around when each weather station measurement is recorded.  
 
-![alt text](img/pubSub_publishedMessages.PNG "Metrics section")  
+![alt text](img/pubSub_publishedMessages.png "Metrics section")  
 
 The way Pub/Sub works though, this only gets the data to GCP. How we need to establish a subscriber to do something with that data. If not, it is not retained and will be deleted.  
 
+[Return to TOC](#table-of-contents)
