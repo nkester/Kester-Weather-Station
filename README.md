@@ -916,7 +916,8 @@ In this section I've consolidated various references I found useful when interac
 ### Function Development  
   * [Medium: GCP - Cloud Functions - Develop it the right way](https://medium.com/google-cloud/gcp-cloud-functions-develop-it-the-right-way-82e633b07756)  
   * [SO: Python Flask App Using Google Cloud Functions](https://stackoverflow.com/questions/62654837/python-flask-app-using-google-cloud-functions)  
-  * [Medium: Cloud Run and Cloud Functions](https://medium.com/google-cloud/cloud-run-and-cloud-function-what-i-use-and-why-12bb5d3798e1)
+  * [Medium: Cloud Run and Cloud Functions](https://medium.com/google-cloud/cloud-run-and-cloud-function-what-i-use-and-why-12bb5d3798e1)  
+  * [GitHub: Google Cloud Functions Framework](https://github.com/GoogleCloudPlatform/functions-framework-python) and [PyPI: Google Cloud Functions Framework](https://pypi.org/project/functions-framework/)
 
 
 ### General  
@@ -948,7 +949,7 @@ According to the [documentation](https://cloud.google.com/functions/docs/concept
 
 > "Google Cloud Functions is a serverless execution environment for building and connecting cloud services."  
 
-This is useful for me because serverless means I only pay when the function is executed rather than for maintaining a server all the time.  
+This is useful for me because serverless means I only pay when the function is executed rather than for maintaining a server all the time. This is also referred to as FaaS (Function as a Service).  
 
 Google Cloud Functions are triggered through several means. The one that is applicable to this operation is the event trigger. We can configure that event to be a Pub/Sub publishing event. This means that I can write a Cloud Function that executes every time a message is published to a specific Pub/Sub topic. Here is information on [Google Cloud Function Triggers](https://cloud.google.com/functions/docs/calling#2nd-gen-triggers)  
 
@@ -956,9 +957,15 @@ Google Cloud Functions operate on several [runtimes](https://cloud.google.com/fu
 
 >Note: We can use other runtimes by providing our own container image to `Cloud Run`. I could use this approach to use `R` but to reduce complexity I'll stick with the built in `python` runtime for `Cloud Functions`.  
 
-Because I plan to use `python` as the execution environment (specifically, `python 3.12`), I need to become acquainted with the 
+Because I plan to use `python` as the execution environment (specifically, `python 3.12`), I need to become acquainted with the python client library with its methods and functions that allow us to provide the function with needed information and to interact with other portions of GCP.  
+
+We can find this documentation on [PyPI: functions-framework](https://pypi.org/project/functions-framework/) and [GitHub: functions-framework](https://github.com/GoogleCloudPlatform/functions-framework-python).  
+
+Likewise, the microservices references provided in the [General References](#gcp-references) above is useful to review.  
 
 ### Using Google Cloud Functions to store data in Google Cloud Storage
+
+Throughout the rest of this guide, I have stored all Google Cloud Function files in the `Cloud Functions` folder.  
 
 
 
