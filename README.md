@@ -923,7 +923,12 @@ In this section I've consolidated various references I found useful when interac
 ### General  
 
   * [Google Blog: Microservices Architecture on Google Cloud Platform](https://cloud.google.com/blog/topics/developers-practitioners/microservices-architecture-google-cloud)  
-  * [Google Blog: Serverless from the Ground Up - Part 1](https://cloud.google.com/blog/products/serverless/serverless-from-the-ground-up-building-a-simple-microservice-with-cloud-functions-part-1)
+  * [Google Blog: Serverless from the Ground Up - Part 1](https://cloud.google.com/blog/products/serverless/serverless-from-the-ground-up-building-a-simple-microservice-with-cloud-functions-part-1)  
+
+### Big Query  
+
+  * [SO: GCP Cloud Function write to BigQuery](https://stackoverflow.com/questions/60844628/gcp-cloud-function-to-write-data-to-bigquery-runs-with-success-but-data-doesnt)  
+  * [SO: Pandas dataframe to JSON Lines](https://stackoverflow.com/questions/51775175/pandas-dataframe-to-jsonl-json-lines-conversion)  
 
 [Return to TOC](#table-of-contents)  
 
@@ -971,6 +976,10 @@ Throughout the rest of this guide, I have stored all Google Cloud Function files
 
 As a stop gap until I learned more about the various databasing options within GCP, I created this function to simply store the data our weather station sent to the Pub/Sub topic. Without doing this, we would have lost after a few days (see the section on [What is GCP Pub/Sub](#what-is-google-pubsub-and-why-use-it)).  
 
+This is a useful Google Docs resource: [Write event-driven functions](https://cloud.google.com/functions/docs/writing/write-event-driven-functions).  
+
+This function is named: `weather_measurement_transformation`  
+
 The following are the elements I wanted this function to accomplish:  
 
   1. Trigger on a cloud event (Published message to the `weather` topic). ChirpStack published its message in JSON format after expanding the payload using the Codec described in the ChirpStack section.  
@@ -986,5 +995,19 @@ If successful, I should see a new JSON file every 15 minutes in my bucket that c
 [Return to TOC](#table-of-contents)  
 
 ## Store ChirpStack Published Messages to Google BigQuery
+
+This function is named: `weather_measurement_transformation_bigquerywrite`  
+
+Similar to the other function, I imported the python libraries: `base64`, `functions_framework`, `json`, `pandas`, and `google.cloud`.  
+
+The elements I wanted this function to accomplish were the same as the previous function except that I wrote the results to a BigQuery table rather than a JSON file. 
+
+In order to make this possible, I needed to properly configure BigQuery. There is a list of appropriate and useful resources for BigQuery in the [references section](#gcp-references) above.   
+
+First, visit the [BigQuery Console](https://console.cloud.google.com/bigquery) for the project. Next, create a dataset with a Dataset ID and region. I named my dataset `weather_measures`.  
+
+Within the dataset, create a table. When doing so, the user is required to provide a schema. With the JSON files created with the previous cloud function, you can select one of these files from your bucket, and select "Auto detect" the schema. I gave my table the name `measures`.    
+
+Now that we have a BigQuery dataset and table set up, I can go back to the Cloud Function and provide that within the script. To save time and be more dynamic during the test, I chose to **"hard code" the ** table_id into the script. This table ID should take the form of `project-ID`.`dataset name`.`table name`. We can then pass the pandas dataframe along with the table ID to a `BigQuery` client object and insert the rows. To deal with errors returned from that call, we check that anything was returned and if so we assume it is an error. 
 
 [Return to TOC](#table-of-contents)  
