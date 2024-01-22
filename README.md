@@ -963,11 +963,25 @@ We can find this documentation on [PyPI: functions-framework](https://pypi.org/p
 
 Likewise, the microservices references provided in the [General References](#gcp-references) above is useful to review.  
 
+In the most basic sense, a Cloud Function consists of two files: `main.py` and `requiremetns.txt`. The `main.py` file contains the function and describes the means of triggering the function and the `requirements.txt` file contains the dependencies required for the function. 
+
 ### Using Google Cloud Functions to store data in Google Cloud Storage
 
 Throughout the rest of this guide, I have stored all Google Cloud Function files in the `Cloud Functions` folder.  
 
+As a stop gap until I learned more about the various databasing options within GCP, I created this function to simply store the data our weather station sent to the Pub/Sub topic. Without doing this, we would have lost after a few days (see the section on [What is GCP Pub/Sub](#what-is-google-pubsub-and-why-use-it)).  
 
+The following are the elements I wanted this function to accomplish:  
+
+  1. Trigger on a cloud event (Published message to the `weather` topic). ChirpStack published its message in JSON format after expanding the payload using the Codec described in the ChirpStack section.  
+  2. Extract the data corresponding to the following JSON keys: `["message"]["data"]`  
+  3. The data is stored in two arrays within the `["object"]["messages"]` object of the previous key, both in the format of: `{"measurementId", "measurementValue", "type"}` so I want to convert both to a pandas dataframe and combine them.  
+  4. Next, I want to add a new new column to this pandas dataframe with the measurment time  
+  5. Finally, I want to convert the pandas dataframe to a JSON object again and store it as a file with a unique name within my Cloud Storage bucket. 
+
+Along the way, I want to print out pertinent information to the function's logs to track its status.  
+
+If successful, I should see a new JSON file every 15 minutes in my bucket that contains one measurement.  
 
 [Return to TOC](#table-of-contents)  
 
