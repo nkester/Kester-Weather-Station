@@ -1008,6 +1008,16 @@ First, visit the [BigQuery Console](https://console.cloud.google.com/bigquery) f
 
 Within the dataset, create a table. When doing so, the user is required to provide a schema. With the JSON files created with the previous cloud function, you can select one of these files from your bucket, and select "Auto detect" the schema. I gave my table the name `measures`.    
 
-Now that we have a BigQuery dataset and table set up, I can go back to the Cloud Function and provide that within the script. To save time and be more dynamic during the test, I chose to **"hard code" the ** table_id into the script. This table ID should take the form of `project-ID`.`dataset name`.`table name`. We can then pass the pandas dataframe along with the table ID to a `BigQuery` client object and insert the rows. To deal with errors returned from that call, we check that anything was returned and if so we assume it is an error. 
+Now that we have a BigQuery dataset and table set up, I can go back to the Cloud Function and provide that as a text string within the script. To save time and be more dynamic during the test, I chose to **"hard code" the ** table_id into the script. I will change this as I continue development. This table ID should take the form of `project-ID.dataset name.table name`. We can then pass the pandas dataframe along with the table ID to a `BigQuery` client object and insert the rows. To deal with errors returned from that call, we check that anything was returned and if so we assume it is an error.  
+
+When triggered, we can check the status of the event in the `LOGS` tab of the cloud function module. We should see a print of the measurement values or "Success". If not, there will be an error. Finally, we can check the `measures` table in BigQuery by clicking on the table, clicking `QUERY`, and providing the following SQL query:  
+
+> Note: the `table ID` below (`weather-station-ef6ca.weather_measures.measures`) is the same table ID provided to the cloud function above and is found in the `DETAILS` tab when selecting the BigQuery table.
+
+```SQL
+SELECT * FROM `weather-station-ef6ca.weather_measures.measures` LIMIT 100
+```
+
+> Note: the quotes around the table ID above are not normal single quotes (`'`) but the "Grave Accent" on the tilda (`~`) key.
 
 [Return to TOC](#table-of-contents)  
