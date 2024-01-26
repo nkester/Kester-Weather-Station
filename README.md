@@ -917,13 +917,19 @@ In this section I've consolidated various references I found useful when interac
   * [Medium: GCP - Cloud Functions - Develop it the right way](https://medium.com/google-cloud/gcp-cloud-functions-develop-it-the-right-way-82e633b07756)  
   * [SO: Python Flask App Using Google Cloud Functions](https://stackoverflow.com/questions/62654837/python-flask-app-using-google-cloud-functions)  
   * [Medium: Cloud Run and Cloud Functions](https://medium.com/google-cloud/cloud-run-and-cloud-function-what-i-use-and-why-12bb5d3798e1)  
-  * [GitHub: Google Cloud Functions Framework](https://github.com/GoogleCloudPlatform/functions-framework-python) and [PyPI: Google Cloud Functions Framework](https://pypi.org/project/functions-framework/)
+  * [GitHub: Google Cloud Functions Framework](https://github.com/GoogleCloudPlatform/functions-framework-python) and [PyPI: Google Cloud Functions Framework](https://pypi.org/project/functions-framework/)  
+  * [Google Docs: Cloud Functions Best Practices](https://cloud.google.com/functions/docs/bestpractices/tips)  
+  * [Medium: Multiple Paths in Cloud Function](https://medium.com/google-cloud/use-multiple-paths-in-cloud-functions-python-and-flask-fc6780e560d3)
 
 
 ### General  
 
   * [Google Blog: Microservices Architecture on Google Cloud Platform](https://cloud.google.com/blog/topics/developers-practitioners/microservices-architecture-google-cloud)  
   * [Google Blog: Serverless from the Ground Up - Part 1](https://cloud.google.com/blog/products/serverless/serverless-from-the-ground-up-building-a-simple-microservice-with-cloud-functions-part-1)  
+  * [SO: Convert Pandas dataframe to JSON Lines](https://stackoverflow.com/questions/51775175/pandas-dataframe-to-jsonl-json-lines-conversion)  
+  * [Flask: Quickstart](https://flask.palletsprojects.com/en/3.0.x/quickstart)  
+  * [Full Stack Python: Web Server Gateway Interface (WSGI)](https://www.fullstackpython.com/wsgi-servers.html)  
+
 
 ### Big Query  
 
@@ -1019,5 +1025,58 @@ SELECT * FROM `weather-station-ef6ca.weather_measures.measures` LIMIT 100
 ```
 
 > Note: the quotes around the table ID above are not normal single quotes (`'`) but the "Grave Accent" on the tilda (`~`) key.
+
+[Return to TOC](#table-of-contents)  
+
+
+## Store ChirpStack Published Messages in Google Firestore  
+
+There is not a need to store this information yet a third time but an initial solution to the storage issue was to use one of Google's document (NoSQL) databases in the FireBase ecosystem called `Firestore`.  
+
+I abandoned this approach to learn more about BigQuery but that may prove to not be the best solution for this project. For that reason, I've retained this function so I can return to it if needed.  
+
+Similar to the other two approaches, we use the same python libraries: `base64`, `functions_framework`, `json`, `pandas`, and `google.cloud`. This approach also uses `firebase_admin`.  
+
+The data extraction and transformation steps are the same as the previous approaches. To load the data into firestore, we create a firestore client with `google.cloud.firestore.Client` and add the records to the `messages` collection.  
+
+One difference is the initialization of an `app` in line 8. I am not clear on what this does and need to do further research in the future.  
+
+Through the [Firebase web console](https://console.cloud.google.com/firestore/databases) we can create, configure, and interact with the project's Firestore Databases. Each project has a `(default)` database which we will use here.  
+
+**This may be an approach to investigate further later**
+
+[Return to TOC](#table-of-contents)  
+
+## Extract Data from BigQuery Based on an HTTPS Request
+
+This function is named: `flask_function`  
+
+Its dependent python libraries are: `flask`, `markupsafe`, `google.cloud`, and `pandas`  
+
+In this function I wanted to create a RESTful API that would serve as the interface between my website and the big query database. In this implementation I've just created an API that provides a common response when requested. I've used `flask` to provide the option to develo a full RESTful API in the future. `flask` is a light weight python web application framework to develop APIs with.  
+
+This API will allow my website to send requests to GCP to make specific queries of data from BigQuery. If I am unable to get Cloud Functions to access parameters as part of the API call I will create different functions for each type of data my user is allowed to request. 
+
+  [Flask: Quickstart](https://flask.palletsprojects.com/en/3.0.x/quickstart)  
+
+### Explanation of the Function Code  
+
+The first thing to do is to create an app object. This is required to help determine what goes with your application.  
+
+Then we create a route with `@app.route`. This is missleading because the route provided here does not actually work. For the same reason, I have not found a way to implement multiple end points for a single Cloud Function. This will be developed further later.  
+
+We pass the `request` object to the `common_cloud_functions_function` and return the results from another function. This is helpful because it sets us up to be able to write and call multiple functions defined in other files or parts of the `main.py` file and imported to serve this work.  
+
+Once the baseline is set, we move on to set up the function that will actually be providing information to the website. I have called this fuction `my_function` for now. An important aspect of these functions is that each potential response path ends with a `return` argument that includes the body, the status code, and the headers object. If not, the website may not interpret it properly.  
+
+If an `"OPTIONS"` request method is recieved by the function, it sets the `CORS` headers and tells the requester what type of requests are allowed, etc. It responds with a `204` response which is "No Content".  
+
+If the request method is not `"OPTIONS"`, `CORS` is enabled in the header and we run a set query on our BigQuery database. In this basic example I just return 10 light intensity measurements. I store the results of that request in the `results` object, convert that to a pandas dataframe and then convert that to a JSON object formated in a way required by my website which is running ObservableJS. Finally, I send the response with a `200` status code.  
+
+> I need to do more testing to see if the conversions are required. I got this solution from this SO article [SO: How to convert results returned from bigquery to JSON format using Python?](https://stackoverflow.com/questions/55681206/how-to-convert-results-returned-from-bigquery-to-json-format-using-python)  
+
+
+
+
 
 [Return to TOC](#table-of-contents)  
