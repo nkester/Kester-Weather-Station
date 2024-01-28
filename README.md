@@ -940,7 +940,13 @@ In this section I've consolidated various references I found useful when interac
   * [SO: Pandas dataframe to JSON Lines](https://stackoverflow.com/questions/51775175/pandas-dataframe-to-jsonl-json-lines-conversion)  
   * [GCP Big Query Python Client Library](https://cloud.google.com/python/docs/reference/bigquery/latest/upgrading)  
   * [Querying Public Data With Big Query Client Libraries](https://cloud.google.com/bigquery/docs/quickstarts/quickstart-client-libraries)  
-  * [Convert BigQuery Results to JSONL in python](https://stackoverflow.com/questions/55681206/how-to-convert-results-returned-from-bigquery-to-json-format-using-python)
+  * [Convert BigQuery Results to JSONL in python](https://stackoverflow.com/questions/55681206/how-to-convert-results-returned-from-bigquery-to-json-format-using-python)  
+
+### Quarto and Observable JavaScript  
+  * [Posit: Overview](https://quarto.org/)  
+  * [OJS: Overview](https://observablehq.com/product)  
+  * [Medium: Inserting and Querying Data in Google Big Query with JavaScript](https://javascript.plainenglish.io/inserting-and-querying-data-in-google-big-query-with-javascript-517aa8d0dc52)  
+  * 
 
 [Return to TOC](#table-of-contents)  
 
@@ -1151,6 +1157,18 @@ This produces the following response:
 With this, we know the function responds to an HTTPS request and provides the expected response. This is good but the real test is using the function from the tool we plan to use.
 
 ### Via a web page locally (`ojs` or `d3`)  
+
+In a separate project, [GitHub: Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site), I plan to use Quarto and Observable JavaScript to take the data produced here and served by this Cloud Function and visualize it on a web page. For that reason, I'll test my ability to integrate the Cloud Function and Quarto's framework here.  
+
+According to its website, [Quarto](https://quarto.org/) is:  
+
+> "An open-source scientific and techincal publishing system" which creates dynamic content that is interchangeable between `Python`, `R`, `Julia`, and `Observable`. These documents can be published from the same code in `HTML`, `PDF`, `MS Word`, `ePub`, etc. It uses `Pandoc` markdown to write the content.  
+
+Likewise, according to the [Observable section of Quarto's website](https://quarto.org/docs/computations/ojs.html), it is:  
+
+> "Observable JS is distinguished by its reactive runtime, which is especially well suited for interactive data exploration and analysis."
+
+> "The e creators of Observable JS (Observable, Inc.) run a hosted service at https://observablehq.com/ where you can create and publish notebooks. Additionally, you can use Observable JS (“OJS”) in standalone documents and websites via its core libraries. Quarto uses these libraries along with a compiler that is run at render time to enable the use of OJS within Quarto documents."
 
 ### Via a deployed web page (`ojs` or `d3`)
 

@@ -36,7 +36,8 @@ def my_function(request):
         SELECT *
         FROM `weather-station-ef6ca.weather_measures.measures`
         WHERE type like 'Light Intensity'
-        LIMIT 10"""
+        LIMIT 10
+        """
     )
 
     results = query_job.result()  # Waits for job to complete.
