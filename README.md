@@ -908,12 +908,15 @@ The way Pub/Sub works though, this only gets the data to GCP. How we need to est
 In this section I've consolidated various references I found useful when interacting with GCP references. Some are repeated in the sections I use them in. Some are only referenced here.  
 
 ### GCP Documentation  
+
   * [Google Docs: What is Cloud Storage](https://cloud.google.com/storage/docs/introduction)  
   * [Google Docs: What is Cloud Functions](https://cloud.google.com/functions/docs/concepts/overview)  
   * [Google Cloud Function Triggers](https://cloud.google.com/functions/docs/calling#2nd-gen-triggers)  
-  * [Google Cloud Function Execution Environments (runtimes)](https://cloud.google.com/functions/docs/concepts/execution-environment)
+  * [Google Cloud Function Execution Environments (runtimes)](https://cloud.google.com/functions/docs/concepts/execution-environment)  
+  * **[GCP Python Cloud Client Libraries](https://cloud.google.com/python/docs/reference)** : This is a critical resource when using python in GCP
 
 ### Function Development  
+
   * [Medium: GCP - Cloud Functions - Develop it the right way](https://medium.com/google-cloud/gcp-cloud-functions-develop-it-the-right-way-82e633b07756)  
   * [SO: Python Flask App Using Google Cloud Functions](https://stackoverflow.com/questions/62654837/python-flask-app-using-google-cloud-functions)  
   * [Medium: Cloud Run and Cloud Functions](https://medium.com/google-cloud/cloud-run-and-cloud-function-what-i-use-and-why-12bb5d3798e1)  
@@ -935,10 +938,13 @@ In this section I've consolidated various references I found useful when interac
 
   * [SO: GCP Cloud Function write to BigQuery](https://stackoverflow.com/questions/60844628/gcp-cloud-function-to-write-data-to-bigquery-runs-with-success-but-data-doesnt)  
   * [SO: Pandas dataframe to JSON Lines](https://stackoverflow.com/questions/51775175/pandas-dataframe-to-jsonl-json-lines-conversion)  
+  * [GCP Big Query Python Client Library](https://cloud.google.com/python/docs/reference/bigquery/latest/upgrading)  
+  * [Querying Public Data With Big Query Client Libraries](https://cloud.google.com/bigquery/docs/quickstarts/quickstart-client-libraries)  
+  * [Convert BigQuery Results to JSONL in python](https://stackoverflow.com/questions/55681206/how-to-convert-results-returned-from-bigquery-to-json-format-using-python)
 
 [Return to TOC](#table-of-contents)  
 
-## Store ChirpStack Published Messages to Google Cloud Storage  
+## Function: Store ChirpStack Published Messages to Google Cloud Storage  
 
 The first thing I want to do with the messages published to my Pub/Sub topic is to simply store them in a Google Cloud Storage bucket. This ensures that I don't lose the data and it gives me the opportunity to learn how the GCP products work.  
 
@@ -998,9 +1004,11 @@ Along the way, I want to print out pertinent information to the function's logs 
 
 If successful, I should see a new JSON file every 15 minutes in my bucket that contains one measurement.  
 
+[Jump to GCP References](#gcp-references)
+
 [Return to TOC](#table-of-contents)  
 
-## Store ChirpStack Published Messages to Google BigQuery
+## Function: Store ChirpStack Published Messages to Google BigQuery
 
 This function is named: `weather_measurement_transformation_bigquerywrite`  
 
@@ -1026,10 +1034,12 @@ SELECT * FROM `weather-station-ef6ca.weather_measures.measures` LIMIT 100
 
 > Note: the quotes around the table ID above are not normal single quotes (`'`) but the "Grave Accent" on the tilda (`~`) key.
 
+[Jump to GCP References](#gcp-references)
+
 [Return to TOC](#table-of-contents)  
 
 
-## Store ChirpStack Published Messages in Google Firestore  
+## Function: Store ChirpStack Published Messages in Google Firestore  
 
 There is not a need to store this information yet a third time but an initial solution to the storage issue was to use one of Google's document (NoSQL) databases in the FireBase ecosystem called `Firestore`.  
 
@@ -1045,9 +1055,11 @@ Through the [Firebase web console](https://console.cloud.google.com/firestore/da
 
 **This may be an approach to investigate further later**
 
+[Jump to GCP References](#gcp-references)
+
 [Return to TOC](#table-of-contents)  
 
-## Extract Data from BigQuery Based on an HTTPS Request
+## Function: Extract Data from BigQuery Based on an HTTPS Request
 
 This function is named: `flask_function`  
 
@@ -1075,8 +1087,73 @@ If the request method is not `"OPTIONS"`, `CORS` is enabled in the header and we
 
 > I need to do more testing to see if the conversions are required. I got this solution from this SO article [SO: How to convert results returned from bigquery to JSON format using Python?](https://stackoverflow.com/questions/55681206/how-to-convert-results-returned-from-bigquery-to-json-format-using-python)  
 
+[Jump to GCP References](#gcp-references)
+
+[Return to TOC](#table-of-contents)  
+
+## Accessing Data: Requesting Data from HTTPS GCP Cloud Functions  
+
+Developing these Cloud Functions to extract, transform, and load data into repositories and other Cloud Functions to make those data accessible does no good if we can't actually request it. This section describes how to do request data from various environments.  
+
+Through the process of these tests, we developed the previously described cloud functions more. For instance, the `flask_function` began much simpler based on the default example provided by GCP for an function with an HTTPS trigger. The code base is below:  
+
+```python
+import functions_framework
+from google.cloud import bigquery
+import pandas
+
+@functions_framework.http
+def hello_http(request):
+    client = bigquery.Client()
+    query_job = client.query(
+        """
+        SELECT *
+        FROM `weather-station-ef6ca.weather_measures.measures`
+        WHERE type like 'Light Intensity'
+        LIMIT 10"""
+    )
+
+    results = query_job.result()  # Waits for job to complete.
+
+    df = results.to_dataframe()
+    json_obj = df.to_json(orient='records')
+
+    return(json_obj)
+```  
+
+The issue here, however, was that when I tried to request this data as part of a web page, I couldn't figure out how to make it return the proper results or at least not results I could use with `ObservableJS`. This led me to research and implement the solution currently used with `Flask` so the response is a properly formed web response with a status, header, and body component. 
 
 
 
+### Locally for testing with a web browser and `curl`  
+
+The most simple way to try the function locally is through a web browser.  
+
+We can find the url to the function by clicking on the function name in the project's [Cloud Function console](https://console.cloud.google.com/functions). The url is shown near the top of the page.  
+
+Click on it and a new browser tab should open and show you the response in JSON format like this:  
+
+![alt text](img/https_webbrowserFunctionCheck.png "Cloud Function Response in a web browser")  
+
+Likewise, the most simple way to test the function via a command line interface is using `curl`.  In the same way as above, from a `bash` terminal run the following command:  
+
+```bash
+curl -X "GET" "https://us-east1-weather-station-ef6ca.cloudfunctions.net/flask_function"
+```  
+> Technically the `-X "GET"` is not needed because "GET" is the default method (rather than "POST", "DELETE", or another) but I like to be explicit  
+
+> To get more information on the back and forth from your machine and the Google server, add `-v` to the command (at the end). This will show the hand shakes, headers, and other information.
+
+This produces the following response:  
+
+![alt text](img/https_curlFunctionCheck.png "Cloud Function Response from curl")  
+
+With this, we know the function responds to an HTTPS request and provides the expected response. This is good but the real test is using the function from the tool we plan to use.
+
+### Via a web page locally (`ojs` or `d3`)  
+
+### Via a deployed web page (`ojs` or `d3`)
+
+[Jump to GCP References](#gcp-references)
 
 [Return to TOC](#table-of-contents)  
