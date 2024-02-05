@@ -924,7 +924,6 @@ In this section I've consolidated various references I found useful when interac
   * [Google Docs: Cloud Functions Best Practices](https://cloud.google.com/functions/docs/bestpractices/tips)  
   * [Medium: Multiple Paths in Cloud Function](https://medium.com/google-cloud/use-multiple-paths-in-cloud-functions-python-and-flask-fc6780e560d3)
 
-
 ### General  
 
   * [Google Blog: Microservices Architecture on Google Cloud Platform](https://cloud.google.com/blog/topics/developers-practitioners/microservices-architecture-google-cloud)  
@@ -932,7 +931,6 @@ In this section I've consolidated various references I found useful when interac
   * [SO: Convert Pandas dataframe to JSON Lines](https://stackoverflow.com/questions/51775175/pandas-dataframe-to-jsonl-json-lines-conversion)  
   * [Flask: Quickstart](https://flask.palletsprojects.com/en/3.0.x/quickstart)  
   * [Full Stack Python: Web Server Gateway Interface (WSGI)](https://www.fullstackpython.com/wsgi-servers.html)  
-
 
 ### Big Query  
 
@@ -946,7 +944,9 @@ In this section I've consolidated various references I found useful when interac
   * [Posit: Overview](https://quarto.org/)  
   * [OJS: Overview](https://observablehq.com/product)  
   * [Medium: Inserting and Querying Data in Google Big Query with JavaScript](https://javascript.plainenglish.io/inserting-and-querying-data-in-google-big-query-with-javascript-517aa8d0dc52)  
-  * 
+  * [D3: The JavaScript Library for bespoke data visualization](https://d3js.org/)  
+  * [D3 in Depth: Requesting JSON data with D3](https://www.d3indepth.com/requests/#requesting-json-data)  
+  * [Quarto: OJS Data Sources, Web APIs](https://quarto.org/docs/interactive/ojs/data-sources.html#web-apis)
 
 [Return to TOC](#table-of-contents)  
 
@@ -1158,7 +1158,9 @@ With this, we know the function responds to an HTTPS request and provides the ex
 
 ### Via a web page locally (`ojs` or `d3`)  
 
-In a separate project, [GitHub: Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site), I plan to use Quarto and Observable JavaScript to take the data produced here and served by this Cloud Function and visualize it on a web page. For that reason, I'll test my ability to integrate the Cloud Function and Quarto's framework here.  
+In a separate project, [GitHub: Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site), I plan to use Quarto and Observable JavaScript to take the data produced here and served by this Cloud Function and visualize it on a web page. For that reason, I'll test my ability to integrate the Cloud Function and Quarto's framework here. That test only includes requesting data from the previously described `flask_function` Cloud Function and displaying that data on the web page as a table.  
+
+**First a little about the tools**
 
 According to its website, [Quarto](https://quarto.org/) is:  
 
@@ -1168,7 +1170,13 @@ Likewise, according to the [Observable section of Quarto's website](https://quar
 
 > "Observable JS is distinguished by its reactive runtime, which is especially well suited for interactive data exploration and analysis."
 
-> "The e creators of Observable JS (Observable, Inc.) run a hosted service at https://observablehq.com/ where you can create and publish notebooks. Additionally, you can use Observable JS (“OJS”) in standalone documents and websites via its core libraries. Quarto uses these libraries along with a compiler that is run at render time to enable the use of OJS within Quarto documents."
+> "The creators of Observable JS (Observable, Inc.) run a hosted service at https://observablehq.com/ where you can create and publish notebooks. Additionally, you can use Observable JS (“OJS”) in standalone documents and websites via its core libraries. Quarto uses these libraries along with a compiler that is run at render time to enable the use of OJS within Quarto documents."
+
+Using `Observable JS` or `ojs`, in short, I am able to create an interactive HTML document with minimal knowledge of JavaScript and without the normal requirement of a backend server for frameworks like `Shiny` in `R` and `Django` in `Python`.  
+
+Another powerful feature of `ojs` is that I am able to leverage existing `JavaScript` software extension packages the community has developed. One such package that is useful for this test and in future visualization and data manipulation efforts is `d3`.  
+
+Learn more about `d3` at the [D3 Official Website](https://d3js.org/) but this is a very powerful tool for data visualization.  
 
 ### Via a deployed web page (`ojs` or `d3`)
 
