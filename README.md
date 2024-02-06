@@ -1,5 +1,28 @@
 # The Kester Weather Station
 
+Version: beta-2.0  
+Previous Versions: [1](https://github.com/nkester/Kester-Weather-Station/tree/v-1.0)
+
+### Table of Contents:  
+  * [Why](#why)  
+  * [High Level Diagram](#high-level-diagram)  
+  * [References](#references)  
+  * [The Approach](#the-approach)  
+  * [The Equipment](#the-equipment)  
+  * [Setting up the Raspberry Pi](#setting-up-the-raspberry-pi)  
+  * [Setting up Chirpstack](#setting-up-chirpstack)  
+  * [Setting up Chirpstack Gateway Bridge](#setting-up-chirpstack-gateway-bridge)  
+  * [Connect the Gateway](#connect-the-gateway)  
+  * [Storing and Preparing Data in PostgreSQL](#storing-and-preparing-data-in-postgresql)  
+  * [Interacting with the Data](#interacting-with-the-data)  
+
+**The following portions describe integration with Google Cloud Platform (GCP)**  
+
+  * [Configure a Chirpstack Integration with Google Pub/Sub](#configure-a-chirpstack-integration-with-google-pubsub)  
+  * [GCP References](#gcp-references)  
+  * [Store Pub/Sub Messages to Google Cloud Storage](#store-chirpstack-published-messages-to-google-cloud-storage)  
+  * [Store Pub/Sub Messages to Google BigQuery](#store-chirpstack-published-messages-to-google-bigquery)
+
 ## Why
 
 ...Why not? 
@@ -7,10 +30,12 @@
 Through this project the kids can learn basics of sensors in the real world, wireless networks, databases, and the power of cloud technologies. At the end, they will be able to point their friends and family from around the world to a website to see how hot it is, how much rain we've gotten, the air quality, etc. near their home. 
 
 ## High Level Diagram  
-
+  
 The diagram below show, at a high level, what we want to set up. Essentially, we want to have one SEEED sensor (to start), the 8-in-1 Weather sensor, that is connected to a computer inside the house and communicates over a Long Range Wide Area Network (LoRaWAN). The sensor will connect to a LoRaWAN gateway that will convert the wireless communication into a digital, computer readable format. That will then connect to a ChirpStack server on our local Raspberry Pi computer. This ChirpStack server will feed the data recieved from the sensor into a PostgreSQL Database stored on the Raspberry Pi. The Raspberry Pi will then push that data periodically to a Google Cloud Platform (GCP) managed database (likely PostgreSQL initially for ease of use). Finally, we will create a static web-page using Quarto and Observable JS, deployed to Google Firebase to query the GCP database and chart the results.
 
 ![alt text](img/SeeedSolutionDiagram.png "Seeed Solution Diagram")  
+
+[Return to TOC](#table-of-contents)
 
 ## References  
 
@@ -32,13 +57,15 @@ The following are links to resources we will use to set up the components show i
       * Using Observable JS: [How to use Observable JS in Quarto](https://quarto.org/docs/interactive/ojs/#overview)  
       * Accessing data. You can do this in R or Python through an API call and then pass it to observable during render but this doesn't make the webpage interactive with current data. You can also call Firestore directly from observable JS which is probably the way to go. [Quarto - Data Sources](https://quarto.org/docs/interactive/ojs/data-sources.html#overview).  
       * [Google Cloud FireStore REST API documentation](https://firebase.google.com/docs/firestore/use-rest-api). This walks us through how we can query the FireStore collection via an REST API with a token.  
-      * [Interacting with Data from Observable JS](https://observablehq.com/@observablehq/introduction-to-data?collection=@observablehq/notebook-fundamentals#apis) 
+      * [Interacting with Data from Observable JS](https://observablehq.com/@observablehq/introduction-to-data?collection=@observablehq/notebook-fundamentals#apis)  
 
+[Return to TOC](#table-of-contents)  
 
 ## The Approach  
 
-I decided to take this approach rather than building our own sensors because it allows us to get a prototype up and operational quicker so we can see how the various components work. If we took the approach of building components ourselves, we would have gotten mired in figuring out how to deploy them into the environment while protecting them from corrosion, etc. These Seeed sensors do that for us and provide the networking required to make it work. In a future project I'd like to get them into buiding the circuits, etc. 
+I decided to take this approach rather than building our own sensors because it allows us to get a prototype up and operational quicker so we can see how the various components work. If we took the approach of building components ourselves, we would have gotten mired in figuring out how to deploy them into the environment while protecting them from corrosion, etc. These Seeed sensors do that for us and provide the networking required to make it work. In a future project I'd like to get them into buiding the circuits, etc.  
 
+[Return to TOC](#table-of-contents)
 
 ## The Equipment  
 
@@ -52,6 +79,8 @@ This is the final list of equipment:
     * SeeedStudio SenseCAP M2 LoRaWAN Indoor Gateway  
       * [M2 Quick Start](./documents/Quick%20Start%20for%20SenseCAP%20M2%20Gateway%20%26%20Sensors.pdf)
       * [Connecting the M2 to ChirpStack](./documents/Connect_M2_Multi-Platform_Gateway_to_ChirpStack.pdf)  
+
+[Return to TOC](#table-of-contents)
 
 ## Setting up the Raspberry Pi  
 
@@ -68,6 +97,8 @@ sudo apt upgrade -y
 ```  
 
 At this point we were ready to start installing the required components for Chirpstack.  
+
+[Return to TOC](#table-of-contents)  
 
 ## Setting up Chirpstack  
 
@@ -185,9 +216,11 @@ IF the `sudo apt update` command above produces errors or you get a lot of `Ign`
 ```
 sudo cp /etc/resolv.conf etc/resolv.conf-2023-07-17
 echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
-```
+```  
 
-## Install and Configure ChirpStack Gateway Bridge  
+[Return to TOC](#table-of-contents)
+
+## Setting up ChirpStack Gateway Bridge  
 
 Finally we are to the point we can install the ChirpStack Gateway Bridge.  
 
@@ -272,7 +305,9 @@ sudo journalctl -f -n 100 -u chirpstack
 
 These logs showed many errors where `chirpstack` tried to connect to all the regions listed. Looking into the `chirpstack` config file at `/etc/chirpstack/chirpstack.toml` all regions were enabled. I commented out all but `eu868` but this did not solve the issue. I think we will get there at the next step when we configure `chirpstack`.  
 
-At this point we can access the Chirpstack Server at `http://localhost:8080` or from within the home network at `http://<raspberry pi IP address>:8080`
+At this point we can access the Chirpstack Server at `http://localhost:8080` or from within the home network at `http://<raspberry pi IP address>:8080`  
+
+[Return to TOC](#table-of-contents)
 
 ## Connect the Gateway  
 
@@ -365,7 +400,9 @@ While this is neat, by default, ChirpStack only saves 10 readings. We can change
 
 > ChirpStack assumes you're connecting it with some other capability like a cloud service provider (Google Cloud Platform, Azure, or AWS) or some other system.  
 
-This is where the PostgreSQL server we installed previously will come in handy. ChirpStack uses this to store its application settins (users, device profiles, etc.) but it can also be integrated with PostgreSQL for data storage.
+This is where the PostgreSQL server we installed previously will come in handy. ChirpStack uses this to store its application settins (users, device profiles, etc.) but it can also be integrated with PostgreSQL for data storage.  
+
+[Return to TOC](#table-of-contents)  
 
 ## Storing and Preparing Data in PostgreSQL  
 
@@ -682,6 +719,8 @@ which gives the following response:
 
 Now we are ready to start interacting with the data!  
 
+[Return to TOC](#table-of-contents)  
+
 ## Interacting with the Data  
 
 Now that we have data formatted in the way we want it, we need to get to the data remotely with a user that has limited priviledges.  
@@ -780,3 +819,399 @@ The result is:
 
 Which is what I expect. Now we can start building charts and tools!  
 
+### Visualizing the Data  
+
+Now that we have a local database with our data extracted into a rectangular dataset we can build tools to explore and visualize it. That work is beyond the scope of this project and is located in the projects below:  
+
+  * `Kester Weather Visualization Site`  
+    * Private: https://gitlab.com/nkester-projects/2023_kesterkids_weatherstation/kester-weather-visualization-site  
+    * Public: https://github.com/nkester/Kester-Weather-Visualization-Site  
+
+The `v-1.x` tag series of tags focus on static visualization sites built from data extracted from the local database and bound into the website. The `v-2.x` tag series focus on similar visualizations based on cloud based data which allows users to interactively query the data. The `v-1.x` approach is limited by the size of the dataset so at some point we can't include all the data we've collected. The `v-2.x` approach solves this but is less portable (I can't email the html file to you).  
+
+Our intent is to implement new visualizations in both the `v-1.x` and `v-2.x` appraochs in the future.  
+
+The following sections describe how we integrate cloud services into this project.  
+
+[Return to TOC](#table-of-contents)  
+
+## Configure a Chirpstack Integration with Google Pub/Sub  
+
+In the previous steps we've focused on collecting, storing, and interacting with our weather station data locally. Next we are expanding out to leverage Cloud Computing solutions. Specifically, we've decided to use Google Cloud Platform.  
+
+> Here is main [Google Cloud Platform (GCP)](https://cloud.google.com/) page.  
+> Get to [GCP Console](https://console.cloud.google.com/) here to create projects, interact with GCP resources, etc.
+
+### What is Google Pub/Sub and Why Use It?
+
+Google Pub/Sub is a scalable cloud messaging service. It is compareable to Amazon Web Service's Simple Notification Service (SNS) and Microsoft Azure's Service Bus.  
+
+Generally, it is a way to decouple data producers from data consumers. It is centered around topics to which data producers publish messages and that data consumers monitor for new data to consume. By doing this, if a data consumer is offline for some reason and then re-connects, it is able to consume messages it missed while offline. This is more robust than point-to-point solutions which fail if both ends (producer and consumer) are not both connected at the same time.  
+
+> Learn more at the [Pub/Sub Google Docs Page](https://cloud.google.com/pubsub/docs/overview)  
+
+### Set up a Google Project  
+
+First and foremost, we must establish a project in Google Cloud Platform. This is important because all resources we create are contained within this project. I'll call my project `weather station`.  
+
+### Configure Pub/Sub  
+
+Create a Pub/Sub Topic at the [Gloud Pub/Sub Console](https://console.cloud.google.com/cloudpubsub). Give the topic a descriptive name, I called mine `weatherMeasures`.  
+
+Next, in order for ChirpStack to publish messages to this topic it needs to have permissions. To do this, we will go to the [Identity and Access Management (IAM) console](https://console.cloud.google.com/iam-admin/iam) in GCP to create a service account with the specific permissions ChirpStack requires.  
+
+Create a service account in the [Service Account console](https://console.cloud.google.com/iam-admin/serviceaccounts). I gave it the name `Chirpstack Publisher` and an explanatory description. Select `Create and Continue` and then choose a role. This role will give the service account the authority to do certain things. We only want it to publish to Pub/Sub, so I'll only add the `Pub/Sub Publisher` role.  
+
+Confirm that the service account was properly applied to Pub/Sub by going back to that console, selecting the topic (blue box) and looking at the permissions tab to the right. There should be a portion named `Pub/Sub Publisher` that lists the service account just created in it.  
+
+![alt text](img/pubSub_permissions.png "Pub/Sub Permissions Settings")  
+
+### Configure the ChirpStack GCP Pub/Sub integration  
+
+In order to set up a ChirpStack GCP Pub/Sub Integration, I had to interact through the web UI. because I couldn't find any instructions describing how to configure the integration via the CLI. The [ChirpStack documentation on GCP integration](https://www.chirpstack.io/docs/chirpstack/integrations/gcp-pub-sub.html) is not very helpful. This is how I got it to work:  
+
+On the Web UI, navigate to the `Tenant -> Application -> Integrations -> GCP Pub/Sub`. The page should look like this:    
+
+![alt text](img/chirpstack_webui_gcpPubsubIntegration.png "ChirpStack GCP Pub/Sub Integration")  
+
+Create a new GCP Integration in which the "Payload encoding" is "JSON", the "GCP project ID" is that of the GCP project we just worked with in the previous step.  
+>Note: Ensure this is not the name but the full ID which will likely replace spaces with `-` and have a set of numbers at the end.  
+
+The topic name is the name you set up previously.  
+>Note: Confusingly, **do not use** the topic name provided in your GCP Pub/Sub Console. This includes the project `projects/<project ID>/topics/<topic ID>`. Instead, use only the plain topic ID in the `Topic ID` column of the [GCP Pub/Sub Console](https://console.cloud.google.com/cloudpubsub/topic).  
+
+Finally, we need the service account credentials for the `Chirpstack Publisher` principle we created in the previous section.  Within the IAM & Admin GCP Product, navigate to the [Service Account Section](https://console.cloud.google.com/iam-admin/serviceaccounts/).  
+
+Click on the `Chirpstack Publisher` email and then the `Keys` tab. Select `Add Key` and `Create new key`. This should give an option to create a `JSON` or `P12` key, choose the `JSON` format.  
+
+![alt text](img/service_account_key.png "Creating a new Service Account Key")  
+
+This will download a new JSON Keyfile to your computer.  
+>This is the only time this file will be generated so don't lose it.  
+
+Copy the contents of the file as is (including the leading and trailing `{ }`) and paste it into the final section of the Chirpstack GCP Integration configuration.  
+
+The final configuration should look something like this:
+
+![alt text](img/chirpstack_webui_gcpPubsubIntegrationConfig.png "ChirpStack GCP Pub/Sub Integration")
+
+At this point, each time the weather station provides a measurement, ChirpStack publishes a message to the GCP Pub/Sub topic. You can check that this is happening by going to the topic's `Metrics` section. You should see a spike around when each weather station measurement is recorded.  
+
+![alt text](img/pubSub_publishedMessages.png "Metrics section")  
+
+The way Pub/Sub works though, this only gets the data to GCP. How we need to establish a subscriber to do something with that data. If not, it is not retained and will be deleted.  
+
+A great tool in GCP that allows us to accomplish this is a `GCP Cloud Function`. These are serverless "functions" or services that cost no money until implemented or "called." Find more information about them at the resources below and how we use them to do work, create files, and even respond to HTTPS requests.     
+
+[Return to TOC](#table-of-contents)  
+
+## GCP References
+
+In this section I've consolidated various references I found useful when interacting with GCP references. Some are repeated in the sections I use them in. Some are only referenced here.  
+
+### GCP Documentation  
+
+  * [Google Docs: What is Cloud Storage](https://cloud.google.com/storage/docs/introduction)  
+  * [Google Docs: What is Cloud Functions](https://cloud.google.com/functions/docs/concepts/overview)  
+  * [Google Cloud Function Triggers](https://cloud.google.com/functions/docs/calling#2nd-gen-triggers)  
+  * [Google Cloud Function Execution Environments (runtimes)](https://cloud.google.com/functions/docs/concepts/execution-environment)  
+  * **[GCP Python Cloud Client Libraries](https://cloud.google.com/python/docs/reference)** : This is a critical resource when using python in GCP
+
+### Function Development  
+
+  * [Medium: GCP - Cloud Functions - Develop it the right way](https://medium.com/google-cloud/gcp-cloud-functions-develop-it-the-right-way-82e633b07756)  
+  * [SO: Python Flask App Using Google Cloud Functions](https://stackoverflow.com/questions/62654837/python-flask-app-using-google-cloud-functions)  
+  * [Medium: Cloud Run and Cloud Functions](https://medium.com/google-cloud/cloud-run-and-cloud-function-what-i-use-and-why-12bb5d3798e1)  
+  * [GitHub: Google Cloud Functions Framework](https://github.com/GoogleCloudPlatform/functions-framework-python) and [PyPI: Google Cloud Functions Framework](https://pypi.org/project/functions-framework/)  
+  * [Google Docs: Cloud Functions Best Practices](https://cloud.google.com/functions/docs/bestpractices/tips)  
+  * [Medium: Multiple Paths in Cloud Function](https://medium.com/google-cloud/use-multiple-paths-in-cloud-functions-python-and-flask-fc6780e560d3)
+
+### General  
+
+  * [Google Blog: Microservices Architecture on Google Cloud Platform](https://cloud.google.com/blog/topics/developers-practitioners/microservices-architecture-google-cloud)  
+  * [Google Blog: Serverless from the Ground Up - Part 1](https://cloud.google.com/blog/products/serverless/serverless-from-the-ground-up-building-a-simple-microservice-with-cloud-functions-part-1)  
+  * [SO: Convert Pandas dataframe to JSON Lines](https://stackoverflow.com/questions/51775175/pandas-dataframe-to-jsonl-json-lines-conversion)  
+  * [Flask: Quickstart](https://flask.palletsprojects.com/en/3.0.x/quickstart)  
+  * [Full Stack Python: Web Server Gateway Interface (WSGI)](https://www.fullstackpython.com/wsgi-servers.html)  
+
+### Big Query  
+
+  * [SO: GCP Cloud Function write to BigQuery](https://stackoverflow.com/questions/60844628/gcp-cloud-function-to-write-data-to-bigquery-runs-with-success-but-data-doesnt)  
+  * [SO: Pandas dataframe to JSON Lines](https://stackoverflow.com/questions/51775175/pandas-dataframe-to-jsonl-json-lines-conversion)  
+  * [GCP Big Query Python Client Library](https://cloud.google.com/python/docs/reference/bigquery/latest/upgrading)  
+  * [Querying Public Data With Big Query Client Libraries](https://cloud.google.com/bigquery/docs/quickstarts/quickstart-client-libraries)  
+  * [Convert BigQuery Results to JSONL in python](https://stackoverflow.com/questions/55681206/how-to-convert-results-returned-from-bigquery-to-json-format-using-python)  
+
+### Quarto and Observable JavaScript  
+  * [Posit: Overview](https://quarto.org/)  
+  * [OJS: Overview](https://observablehq.com/product)  
+  * [Medium: Inserting and Querying Data in Google Big Query with JavaScript](https://javascript.plainenglish.io/inserting-and-querying-data-in-google-big-query-with-javascript-517aa8d0dc52)  
+  * [D3: The JavaScript Library for bespoke data visualization](https://d3js.org/)  
+  * [D3 in Depth: Requesting JSON data with D3](https://www.d3indepth.com/requests/#requesting-json-data)  
+  * [Quarto: OJS Data Sources, Web APIs](https://quarto.org/docs/interactive/ojs/data-sources.html#web-apis)
+
+[Return to TOC](#table-of-contents)  
+
+## Function: Store ChirpStack Published Messages to Google Cloud Storage  
+
+The first thing I want to do with the messages published to my Pub/Sub topic is to simply store them in a Google Cloud Storage bucket. This ensures that I don't lose the data and it gives me the opportunity to learn how the GCP products work.  
+
+I will use two GCP products: `Google Cloud Storage` and `Google Cloud Functions`. In the following sections I'll describe what each product is and then how I'm integrating them. 
+
+### What is Google Cloud Storage  
+
+According to the [documentation](https://cloud.google.com/storage/docs/introduction):  
+
+>"Cloud Storage is a service for storing your objects in Google Cloud. An object is an immutable piece of data consisting of a file of any format. You store objects in containers called buckets."
+
+So, Cloud Storage is just a place to save files and a bucket allows us to manage permissions and associate files with a specific project, etc.  
+
+This is a link to the [GCP Cloud Storage console](https://console.cloud.google.com/storage)
+
+### What is Google Cloud Functions
+
+According to the [documentation](https://cloud.google.com/functions/docs/concepts/overview):  
+
+> "Google Cloud Functions is a serverless execution environment for building and connecting cloud services."  
+
+This is useful for me because serverless means I only pay when the function is executed rather than for maintaining a server all the time. This is also referred to as FaaS (Function as a Service).  
+
+Google Cloud Functions are triggered through several means. The one that is applicable to this operation is the event trigger. We can configure that event to be a Pub/Sub publishing event. This means that I can write a Cloud Function that executes every time a message is published to a specific Pub/Sub topic. Here is information on [Google Cloud Function Triggers](https://cloud.google.com/functions/docs/calling#2nd-gen-triggers)  
+
+Google Cloud Functions operate on several [runtimes](https://cloud.google.com/functions/docs/concepts/execution-environment) or programming languages. The service provides several versions of: `python`, `Go`, `Node.js`, `Java`, etc. Of those, I am most comfortable with `python` so I'll use that in all my work. 
+
+>Note: We can use other runtimes by providing our own container image to `Cloud Run`. I could use this approach to use `R` but to reduce complexity I'll stick with the built in `python` runtime for `Cloud Functions`.  
+
+Because I plan to use `python` as the execution environment (specifically, `python 3.12`), I need to become acquainted with the python client library with its methods and functions that allow us to provide the function with needed information and to interact with other portions of GCP.  
+
+We can find this documentation on [PyPI: functions-framework](https://pypi.org/project/functions-framework/) and [GitHub: functions-framework](https://github.com/GoogleCloudPlatform/functions-framework-python).  
+
+Likewise, the microservices references provided in the [General References](#gcp-references) above is useful to review.  
+
+In the most basic sense, a Cloud Function consists of two files: `main.py` and `requiremetns.txt`. The `main.py` file contains the function and describes the means of triggering the function and the `requirements.txt` file contains the dependencies required for the function. 
+
+### Using Google Cloud Functions to store data in Google Cloud Storage
+
+Throughout the rest of this guide, I have stored all Google Cloud Function files in the `Cloud Functions` folder.  
+
+As a stop gap until I learned more about the various databasing options within GCP, I created this function to simply store the data our weather station sent to the Pub/Sub topic. Without doing this, we would have lost after a few days (see the section on [What is GCP Pub/Sub](#what-is-google-pubsub-and-why-use-it)).  
+
+This is a useful Google Docs resource: [Write event-driven functions](https://cloud.google.com/functions/docs/writing/write-event-driven-functions).  
+
+This function is named: `weather_measurement_transformation`  
+
+The following are the elements I wanted this function to accomplish:  
+
+  1. Trigger on a cloud event (Published message to the `weather` topic). ChirpStack published its message in JSON format after expanding the payload using the Codec described in the ChirpStack section.  
+  2. Extract the data corresponding to the following JSON keys: `["message"]["data"]`  
+  3. The data is stored in two arrays within the `["object"]["messages"]` object of the previous key, both in the format of: `{"measurementId", "measurementValue", "type"}` so I want to convert both to a pandas dataframe and combine them.  
+  4. Next, I want to add a new new column to this pandas dataframe with the measurment time  
+  5. Finally, I want to convert the pandas dataframe to a JSON object again and store it as a file with a unique name within my Cloud Storage bucket. 
+
+Along the way, I want to print out pertinent information to the function's logs to track its status.  
+
+If successful, I should see a new JSON file every 15 minutes in my bucket that contains one measurement.  
+
+[Jump to GCP References](#gcp-references)
+
+[Return to TOC](#table-of-contents)  
+
+## Function: Store ChirpStack Published Messages to Google BigQuery
+
+This function is named: `weather_measurement_transformation_bigquerywrite`  
+
+Similar to the other function, I imported the python libraries: `base64`, `functions_framework`, `json`, `pandas`, and `google.cloud`.  
+
+The elements I wanted this function to accomplish were the same as the previous function except that I wrote the results to a BigQuery table rather than a JSON file. 
+
+In order to make this possible, I needed to properly configure BigQuery. There is a list of appropriate and useful resources for BigQuery in the [references section](#gcp-references) above.   
+
+First, visit the [BigQuery Console](https://console.cloud.google.com/bigquery) for the project. Next, create a dataset with a Dataset ID and region. I named my dataset `weather_measures`.  
+
+Within the dataset, create a table. When doing so, the user is required to provide a schema. With the JSON files created with the previous cloud function, you can select one of these files from your bucket, and select "Auto detect" the schema. I gave my table the name `measures`.    
+
+Now that we have a BigQuery dataset and table set up, I can go back to the Cloud Function and provide that as a text string within the script. To save time and be more dynamic during the test, I chose to **"hard code" the ** table_id into the script. I will change this as I continue development. This table ID should take the form of `project-ID.dataset name.table name`. We can then pass the pandas dataframe along with the table ID to a `BigQuery` client object and insert the rows. To deal with errors returned from that call, we check that anything was returned and if so we assume it is an error.  
+
+When triggered, we can check the status of the event in the `LOGS` tab of the cloud function module. We should see a print of the measurement values or "Success". If not, there will be an error. Finally, we can check the `measures` table in BigQuery by clicking on the table, clicking `QUERY`, and providing the following SQL query:  
+
+> Note: the `table ID` below (`weather-station-ef6ca.weather_measures.measures`) is the same table ID provided to the cloud function above and is found in the `DETAILS` tab when selecting the BigQuery table.
+
+```SQL
+SELECT * FROM `weather-station-ef6ca.weather_measures.measures` LIMIT 100
+```
+
+> Note: the quotes around the table ID above are not normal single quotes (`'`) but the "Grave Accent" on the tilda (`~`) key.
+
+[Jump to GCP References](#gcp-references)
+
+[Return to TOC](#table-of-contents)  
+
+
+## Function: Store ChirpStack Published Messages in Google Firestore  
+
+There is not a need to store this information yet a third time but an initial solution to the storage issue was to use one of Google's document (NoSQL) databases in the FireBase ecosystem called `Firestore`.  
+
+I abandoned this approach to learn more about BigQuery but that may prove to not be the best solution for this project. For that reason, I've retained this function so I can return to it if needed.  
+
+Similar to the other two approaches, we use the same python libraries: `base64`, `functions_framework`, `json`, `pandas`, and `google.cloud`. This approach also uses `firebase_admin`.  
+
+The data extraction and transformation steps are the same as the previous approaches. To load the data into firestore, we create a firestore client with `google.cloud.firestore.Client` and add the records to the `messages` collection.  
+
+One difference is the initialization of an `app` in line 8. I am not clear on what this does and need to do further research in the future.  
+
+Through the [Firebase web console](https://console.cloud.google.com/firestore/databases) we can create, configure, and interact with the project's Firestore Databases. Each project has a `(default)` database which we will use here.  
+
+**This may be an approach to investigate further later**
+
+[Jump to GCP References](#gcp-references)
+
+[Return to TOC](#table-of-contents)  
+
+## Function: Extract Data from BigQuery Based on an HTTPS Request
+
+This function is named: `flask_function`  
+
+Its dependent python libraries are: `flask`, `markupsafe`, `google.cloud`, and `pandas`  
+
+In this function I wanted to create a RESTful API that would serve as the interface between my website and the big query database. In this implementation I've just created an API that provides a common response when requested. I've used `flask` to provide the option to develo a full RESTful API in the future. `flask` is a light weight python web application framework to develop APIs with.  
+
+This API will allow my website to send requests to GCP to make specific queries of data from BigQuery. If I am unable to get Cloud Functions to access parameters as part of the API call I will create different functions for each type of data my user is allowed to request. 
+
+  [Flask: Quickstart](https://flask.palletsprojects.com/en/3.0.x/quickstart)  
+
+### Explanation of the Function Code  
+
+The first thing to do is to create an app object. This is required to help determine what goes with your application.  
+
+Then we create a route with `@app.route`. This is missleading because the route provided here does not actually work. For the same reason, I have not found a way to implement multiple end points for a single Cloud Function. This will be developed further later.  
+
+We pass the `request` object to the `common_cloud_functions_function` and return the results from another function. This is helpful because it sets us up to be able to write and call multiple functions defined in other files or parts of the `main.py` file and imported to serve this work.  
+
+Once the baseline is set, we move on to set up the function that will actually be providing information to the website. I have called this fuction `my_function` for now. An important aspect of these functions is that each potential response path ends with a `return` argument that includes the body, the status code, and the headers object. If not, the website may not interpret it properly.  
+
+If an `"OPTIONS"` request method is recieved by the function, it sets the `CORS` headers and tells the requester what type of requests are allowed, etc. It responds with a `204` response which is "No Content".  
+
+If the request method is not `"OPTIONS"`, `CORS` is enabled in the header and we run a set query on our BigQuery database. In this basic example I just return 10 light intensity measurements. I store the results of that request in the `results` object, convert that to a pandas dataframe and then convert that to a JSON object formated in a way required by my website which is running ObservableJS. Finally, I send the response with a `200` status code.  
+
+> I need to do more testing to see if the conversions are required. I got this solution from this SO article [SO: How to convert results returned from bigquery to JSON format using Python?](https://stackoverflow.com/questions/55681206/how-to-convert-results-returned-from-bigquery-to-json-format-using-python)  
+
+[Jump to GCP References](#gcp-references)
+
+[Return to TOC](#table-of-contents)  
+
+## Accessing Data: Requesting Data from HTTPS GCP Cloud Functions  
+
+Developing these Cloud Functions to extract, transform, and load data into repositories and other Cloud Functions to make those data accessible does no good if we can't actually request it. This section describes how to do request data from various environments.  
+
+Through the process of these tests, we developed the previously described cloud functions more. For instance, the `flask_function` began much simpler based on the default example provided by GCP for an function with an HTTPS trigger. The code base is below:  
+
+```python
+import functions_framework
+from google.cloud import bigquery
+import pandas
+
+@functions_framework.http
+def hello_http(request):
+    client = bigquery.Client()
+    query_job = client.query(
+        """
+        SELECT *
+        FROM `weather-station-ef6ca.weather_measures.measures`
+        WHERE type like 'Light Intensity'
+        LIMIT 10"""
+    )
+
+    results = query_job.result()  # Waits for job to complete.
+
+    df = results.to_dataframe()
+    json_obj = df.to_json(orient='records')
+
+    return(json_obj)
+```  
+
+The issue here, however, was that when I tried to request this data as part of a web page, I couldn't figure out how to make it return the proper results or at least not results I could use with `ObservableJS`. This led me to research and implement the solution currently used with `Flask` so the response is a properly formed web response with a status, header, and body component. 
+
+
+
+### Locally for testing with a web browser and `curl`  
+
+The most simple way to try the function locally is through a web browser.  
+
+We can find the url to the function by clicking on the function name in the project's [Cloud Function console](https://console.cloud.google.com/functions). The url is shown near the top of the page.  
+
+Click on it and a new browser tab should open and show you the response in JSON format like this:  
+
+![alt text](img/https_webbrowserFunctionCheck.png "Cloud Function Response in a web browser")  
+
+Likewise, the most simple way to test the function via a command line interface is using `curl`.  In the same way as above, from a `bash` terminal run the following command:  
+
+```bash
+curl -X "GET" "https://us-east1-weather-station-ef6ca.cloudfunctions.net/flask_function"
+```  
+> Technically the `-X "GET"` is not needed because "GET" is the default method (rather than "POST", "DELETE", or another) but I like to be explicit  
+
+> To get more information on the back and forth from your machine and the Google server, add `-v` to the command (at the end). This will show the hand shakes, headers, and other information.
+
+This produces the following response:  
+
+![alt text](img/https_curlFunctionCheck.png "Cloud Function Response from curl")  
+
+With this, we know the function responds to an HTTPS request and provides the expected response. This is good but the real test is using the function from the tool we plan to use.
+
+### Via a web page locally (`ojs` or `d3`)  
+
+In a separate project, [GitHub: Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site), I plan to use Quarto and Observable JavaScript to take the data produced here and served by this Cloud Function and visualize it on a web page. For that reason, I'll test my ability to integrate the Cloud Function and Quarto's framework here. That test only includes requesting data from the previously described `flask_function` Cloud Function and displaying that data on the web page as a table.  
+
+**First a little about the tools**
+
+According to its website, [Quarto](https://quarto.org/) is:  
+
+> "An open-source scientific and techincal publishing system" which creates dynamic content that is interchangeable between `Python`, `R`, `Julia`, and `Observable`. These documents can be published from the same code in `HTML`, `PDF`, `MS Word`, `ePub`, etc. It uses `Pandoc` markdown to write the content.  
+
+Likewise, according to the [Observable section of Quarto's website](https://quarto.org/docs/computations/ojs.html), it is:  
+
+> "Observable JS is distinguished by its reactive runtime, which is especially well suited for interactive data exploration and analysis."
+
+> "The creators of Observable JS (Observable, Inc.) run a hosted service at https://observablehq.com/ where you can create and publish notebooks. Additionally, you can use Observable JS (“OJS”) in standalone documents and websites via its core libraries. Quarto uses these libraries along with a compiler that is run at render time to enable the use of OJS within Quarto documents."
+
+Using `Observable JS` or `ojs`, in short, I am able to create an interactive HTML document with minimal knowledge of JavaScript and without the normal requirement of a backend server for frameworks like `Shiny` in `R` and `Django` in `Python`.  
+
+Another powerful feature of `ojs` is that I am able to leverage existing `JavaScript` software extension packages the community has developed. One such package that is useful for this test and in future visualization and data manipulation efforts is `d3`.  
+
+For this basic example I'll just use `d3` to query the function and produce a table but to learn more about `d3`, visit the [D3 Official Website](https://d3js.org/).  
+
+**Getting and presenting data**  
+
+We load JavaScript software extension packages by calling the following command in a Quarto `ojs` chunk.  
+
+> Note that because `ojs` runs at build time, we can put the chunks in any order we want (unlike `python` and `R`).  
+
+```javascript
+d3 = require('d3')
+```
+
+With that pacakge loaded, we simply run the following chunk to request the data from the Cloud Function URL and present it in a table:  
+
+```javascript
+measures = await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/flask_function")
+
+Inputs.table(measures)
+```
+
+In future work we may develop a cloud function that takes request parameters (dates to return, measurement type, etc.) but at this point the function takes no arguments and returns a static SQL query result.  
+
+That is the extent of this demonstration. Now that it works locally (see source files in `./Quarto`), we will deploy it to FireBase Hosting to ensure it still works.
+
+### Via a deployed web page (`ojs` or `d3`)  
+
+Rendering a Quarto file as I've configured it produces an html output file. We have this from the previous step. Now I will take that single html file as well as the folder named `basic_webQuery_files` and place it in the `site` folder of the `kesterWeatherSite` project here: [GitHub: Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site/tree/main/site). Move that directory is important as that contains the dependent `d3` libraries, css, etc. required to properly render the webpage and make it function as expected.   
+
+From there I will deploy the new files useing the method descriped in the [GitHub: Publishing to Google Firebase](https://github.com/nkester/Kester-Weather-Visualization-Site/tree/main?tab=readme-ov-file#publishing-to-google-firebase) section of that readme.md.  
+
+![alt text](img/testCloudFunctionPageOnFirebase.png "The result of the test website with the Cloud Function response")
+
+With that, the basic test was successful so we can move on to developing the cloud functions more appropriately as well as the visualizations. I will document development of the Cloud Functions (structuring and delivering data) in thie project and transforming that data into useful visualizations on the [GitHub: Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site) project.
+
+[Jump to GCP References](#gcp-references)
+
+[Return to TOC](#table-of-contents)  

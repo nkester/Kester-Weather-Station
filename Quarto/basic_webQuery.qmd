@@ -1,0 +1,29 @@
+---
+title: "Leverage HTTPS GCP Cloud Functions and Observable JS with Quarto"
+subtitle: "A Basic Example Fetching Data From an HTTPS GCP Cloud Function using Observable JS"
+author: "Neil Kester"
+date: "1/28/2024"
+format: html
+---
+
+This minimal example demonstrates how to use [Quarto](https://quarto.org/) and [ObservableJS](https://observablehq.com/) to query a Google Cloud Platform Cloud Function, configured as a python flask API, and produce a simple chart.  
+
+The larger projects this supports are: [GitHub: Kester Weather Station](https://github.com/nkester/Kester-Weather-Station) and [GitHub: Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site).  
+
+
+
+```{ojs}
+
+d3 = require('d3')
+
+```
+
+
+```{ojs}
+
+measures = await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/flask_function")
+
+Inputs.table(measures)
+
+```
+
