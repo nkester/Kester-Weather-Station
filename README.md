@@ -1200,7 +1200,15 @@ In future work we may develop a cloud function that takes request parameters (da
 
 That is the extent of this demonstration. Now that it works locally (see source files in `./Quarto`), we will deploy it to FireBase Hosting to ensure it still works.
 
-### Via a deployed web page (`ojs` or `d3`)
+### Via a deployed web page (`ojs` or `d3`)  
+
+Rendering a Quarto file as I've configured it produces an html output file. We have this from the previous step. Now I will take that single html file as well as the folder named `basic_webQuery_files` and place it in the `site` folder of the `kesterWeatherSite` project here: [GitHub: Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site/tree/main/site). Move that directory is important as that contains the dependent `d3` libraries, css, etc. required to properly render the webpage and make it function as expected.   
+
+From there I will deploy the new files useing the method descriped in the [GitHub: Publishing to Google Firebase](https://github.com/nkester/Kester-Weather-Visualization-Site/tree/main?tab=readme-ov-file#publishing-to-google-firebase) section of that readme.md.  
+
+![alt text](img/testCloudFunctionPageOnFirebase.png "The result of the test website with the Cloud Function response")
+
+With that, the basic test was successful so we can move on to developing the cloud functions more appropriately as well as the visualizations. I will document development of the Cloud Functions (structuring and delivering data) in thie project and transforming that data into useful visualizations on the [GitHub: Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site) project.
 
 [Jump to GCP References](#gcp-references)
 
