@@ -1,6 +1,6 @@
 # The Kester Weather Station
 
-Version: beta-2.0
+Version: beta-2.0  
 Previous Versions: [1](https://github.com/nkester/Kester-Weather-Station/tree/v-1.0)
 
 ### Table of Contents:  
@@ -895,11 +895,13 @@ The final configuration should look something like this:
 
 ![alt text](img/chirpstack_webui_gcpPubsubIntegrationConfig.png "ChirpStack GCP Pub/Sub Integration")
 
-At this point, each time the weather station provides a measurement. You can check that this is happening by going to the topic's `Metrics` section. You should see a spike around when each weather station measurement is recorded.  
+At this point, each time the weather station provides a measurement, ChirpStack publishes a message to the GCP Pub/Sub topic. You can check that this is happening by going to the topic's `Metrics` section. You should see a spike around when each weather station measurement is recorded.  
 
 ![alt text](img/pubSub_publishedMessages.png "Metrics section")  
 
 The way Pub/Sub works though, this only gets the data to GCP. How we need to establish a subscriber to do something with that data. If not, it is not retained and will be deleted.  
+
+A great tool in GCP that allows us to accomplish this is a `GCP Cloud Function`. These are serverless "functions" or services that cost no money until implemented or "called." Find more information about them at the resources below and how we use them to do work, create files, and even respond to HTTPS requests.     
 
 [Return to TOC](#table-of-contents)  
 
