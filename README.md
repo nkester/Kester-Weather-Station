@@ -1176,7 +1176,29 @@ Using `Observable JS` or `ojs`, in short, I am able to create an interactive HTM
 
 Another powerful feature of `ojs` is that I am able to leverage existing `JavaScript` software extension packages the community has developed. One such package that is useful for this test and in future visualization and data manipulation efforts is `d3`.  
 
-Learn more about `d3` at the [D3 Official Website](https://d3js.org/) but this is a very powerful tool for data visualization.  
+For this basic example I'll just use `d3` to query the function and produce a table but to learn more about `d3`, visit the [D3 Official Website](https://d3js.org/).  
+
+**Getting and presenting data**  
+
+We load JavaScript software extension packages by calling the following command in a Quarto `ojs` chunk.  
+
+> Note that because `ojs` runs at build time, we can put the chunks in any order we want (unlike `python` and `R`).  
+
+```javascript
+d3 = require('d3')
+```
+
+With that pacakge loaded, we simply run the following chunk to request the data from the Cloud Function URL and present it in a table:  
+
+```javascript
+measures = await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/flask_function")
+
+Inputs.table(measures)
+```
+
+In future work we may develop a cloud function that takes request parameters (dates to return, measurement type, etc.) but at this point the function takes no arguments and returns a static SQL query result.  
+
+That is the extent of this demonstration. Now that it works locally (see source files in `./Quarto`), we will deploy it to FireBase Hosting to ensure it still works.
 
 ### Via a deployed web page (`ojs` or `d3`)
 
