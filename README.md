@@ -924,7 +924,8 @@ In this section I've consolidated various references I found useful when interac
   * [Medium: Cloud Run and Cloud Functions](https://medium.com/google-cloud/cloud-run-and-cloud-function-what-i-use-and-why-12bb5d3798e1)  
   * [GitHub: Google Cloud Functions Framework](https://github.com/GoogleCloudPlatform/functions-framework-python) and [PyPI: Google Cloud Functions Framework](https://pypi.org/project/functions-framework/)  
   * [Google Docs: Cloud Functions Best Practices](https://cloud.google.com/functions/docs/bestpractices/tips)  
-  * [Medium: Multiple Paths in Cloud Function](https://medium.com/google-cloud/use-multiple-paths-in-cloud-functions-python-and-flask-fc6780e560d3)
+  * [Medium: Multiple Paths in Cloud Function](https://medium.com/google-cloud/use-multiple-paths-in-cloud-functions-python-and-flask-fc6780e560d3)  
+  * [Cloud Functions: ]
 
 ### General  
 
@@ -941,6 +942,7 @@ In this section I've consolidated various references I found useful when interac
   * [GCP Big Query Python Client Library](https://cloud.google.com/python/docs/reference/bigquery/latest/upgrading)  
   * [Querying Public Data With Big Query Client Libraries](https://cloud.google.com/bigquery/docs/quickstarts/quickstart-client-libraries)  
   * [Convert BigQuery Results to JSONL in python](https://stackoverflow.com/questions/55681206/how-to-convert-results-returned-from-bigquery-to-json-format-using-python)  
+  * [BigQuery Data Types: Date Type](https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#date_type)
 
 ### Quarto and Observable JavaScript  
   * [Posit: Overview](https://quarto.org/)  
@@ -1094,6 +1096,23 @@ If an `"OPTIONS"` request method is recieved by the function, it sets the `CORS`
 If the request method is not `"OPTIONS"`, `CORS` is enabled in the header and we run a set query on our BigQuery database. In this basic example I just return 10 light intensity measurements. I store the results of that request in the `results` object, convert that to a pandas dataframe and then convert that to a JSON object formated in a way required by my website which is running ObservableJS. Finally, I send the response with a `200` status code.  
 
 > I need to do more testing to see if the conversions are required. I got this solution from this SO article [SO: How to convert results returned from bigquery to JSON format using Python?](https://stackoverflow.com/questions/55681206/how-to-convert-results-returned-from-bigquery-to-json-format-using-python)  
+
+### Developments in the function code  
+
+I further refined the BigQuery query as the following:  
+
+```SQL
+SELECT 
+  CAST(DATETIME(time, "Europe/Vatican")AS STRING FORMAT 'YYYY-MM-DD HH12:MI:SS') AS local_time,
+  type,
+  `measurementValue`
+FROM `weather-station-ef6ca.weather_measures.measures`
+WHERE type like 'Air Temperature'
+ORDER BY time DESC
+LIMIT 10
+```
+
+Big Query stores the date as a datetime field but when it is converted into a JSON by pandas, the field is converted into a large number. To deal with this at the source, we use the `CAST` function in the query to cast the datetime object as a string with a specific format and timezone. We also order it by time so we get the 10 most recent measurements.
 
 [Jump to GCP References](#gcp-references)
 
