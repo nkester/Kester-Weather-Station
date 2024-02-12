@@ -34,13 +34,13 @@ def my_function(request):
     query_job = client.query(
         """
         SELECT 
-          CAST(DATETIME(time, "Europe/Vatican")AS STRING FORMAT 'YYYY-MM-DD HH12:MI:SS') AS local_time,
+          CAST(DATETIME(time, "Europe/Vatican")AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SS') AS local_time,
           type,
           `measurementValue`
         FROM `weather-station-ef6ca.weather_measures.measures`
         WHERE type like 'Air Temperature'
         ORDER BY time DESC
-        LIMIT 10
+        LIMIT 100
         """
     )
 
