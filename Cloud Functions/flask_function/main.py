@@ -40,7 +40,7 @@ def my_function(request):
         FROM `weather-station-ef6ca.weather_measures.measures`
         WHERE type like 'Air Temperature'
         ORDER BY time DESC
-        LIMIT 100
+        LIMIT 672
         """
     )
 
