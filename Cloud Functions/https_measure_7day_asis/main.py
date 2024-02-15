@@ -7,7 +7,7 @@ import pandas
 app = Flask("google_managed")
 
 @app.route('/my_function', methods=['GET', 'POST'])
-def common_cloud_functions_function(request):
+def https_measure_7day_asis(request):
     return my_function(request)
 ############### MANAGED AND PROVIDED BY YOU ####################
 def my_function(request):
@@ -33,14 +33,17 @@ def my_function(request):
     client = bigquery.Client()
     query_job = client.query(
         """
-        SELECT 
+        SELECT  
           CAST(DATETIME(time, "Europe/Vatican")AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SS') AS local_time,
           type,
           `measurementValue`
-        FROM `weather-station-ef6ca.weather_measures.measures`
-        WHERE type like 'Air Temperature'
-        ORDER BY time DESC
-        LIMIT 672
+        FROM (
+            SELECT 
+              *,
+              row_number() over (partition by type order by time desc) as seqnum
+            FROM `weather-station-ef6ca.weather_measures.measures`
+              ) AS t
+        WHERE seqnum <= 672
         """
     )
 
