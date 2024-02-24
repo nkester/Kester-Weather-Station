@@ -39,6 +39,7 @@ def my_function(request):
           `measurementValue`
         FROM `weather-station-ef6ca.weather_measures.measures`
         WHERE time BETWEEN TIMESTAMP_SUB(CURRENT_TIMESTAMP, INTERVAL 1440 HOUR) AND CURRENT_TIMESTAMP
+        ORDER BY local_time DESC
         """
     )
 
