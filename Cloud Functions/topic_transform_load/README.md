@@ -1,6 +1,6 @@
 # Cloud Function: `topic_transform_load`  
 
-This function is triggered by messages published to the `weather` Pub/Sub topic. It reads the message, parses out the information, and performs three write actions. One to a file stored in a Google Cloud Storage bucket, one to a BigQuery dataset, and the final to a Google FireStore Document library. These are all redundant. The BigQuery dataset is the only currently used and the Cloud Storage bucket allows us to access past events in case we want to do something different. __The FireStore is no longer needed.__
+This function is triggered by messages published to the `weather` Pub/Sub topic. It reads the message, parses out the information, and performs two write actions. One to a file stored in a Google Cloud Storage bucket and one to a BigQuery dataset. These are redundant but the BigQuery dataset is actively used by the visualization site and the Cloud Storage bucket allows us to access past events in case we want to do something different.
 
 Deploy with the following command. This assumes the shell is in the `Cloud Functions` directory (one level up from the source files).  
 
