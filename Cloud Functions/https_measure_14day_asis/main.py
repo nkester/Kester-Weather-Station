@@ -37,13 +37,8 @@ def my_function(request):
           CAST(DATETIME(time, "Europe/Vatican")AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SS') AS local_time,
           type,
           `measurementValue`
-        FROM (
-            SELECT 
-              *,
-              row_number() over (partition by type order by time desc) as seqnum
-            FROM `weather-station-ef6ca.weather_measures.measures`
-              ) AS t
-        WHERE seqnum <= 1632
+        FROM `weather-station-ef6ca.weather_measures.measures`
+        WHERE time BETWEEN TIMESTAMP_SUB(CURRENT_TIMESTAMP, INTERVAL 336 HOUR) AND CURRENT_TIMESTAMP
         """
     )
 
