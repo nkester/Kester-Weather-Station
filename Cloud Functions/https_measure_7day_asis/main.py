@@ -7,7 +7,7 @@ import pandas
 app = Flask("google_managed")
 
 @app.route('/my_function', methods=['GET', 'POST'])
-def common_cloud_functions_function(request):
+def https_measure_7day_asis(request):
     return my_function(request)
 ############### MANAGED AND PROVIDED BY YOU ####################
 def my_function(request):
@@ -33,10 +33,13 @@ def my_function(request):
     client = bigquery.Client()
     query_job = client.query(
         """
-        SELECT *
+        SELECT  
+          CAST(DATETIME(time, "Europe/Vatican")AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SS') AS local_time,
+          type,
+          `measurementValue`
         FROM `weather-station-ef6ca.weather_measures.measures`
-        WHERE type like 'Light Intensity'
-        LIMIT 10
+        WHERE time BETWEEN TIMESTAMP_SUB(CURRENT_TIMESTAMP, INTERVAL 168 HOUR) AND CURRENT_TIMESTAMP
+        ORDER BY local_time DESC
         """
     )
 

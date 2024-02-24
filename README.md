@@ -924,7 +924,8 @@ In this section I've consolidated various references I found useful when interac
   * [Medium: Cloud Run and Cloud Functions](https://medium.com/google-cloud/cloud-run-and-cloud-function-what-i-use-and-why-12bb5d3798e1)  
   * [GitHub: Google Cloud Functions Framework](https://github.com/GoogleCloudPlatform/functions-framework-python) and [PyPI: Google Cloud Functions Framework](https://pypi.org/project/functions-framework/)  
   * [Google Docs: Cloud Functions Best Practices](https://cloud.google.com/functions/docs/bestpractices/tips)  
-  * [Medium: Multiple Paths in Cloud Function](https://medium.com/google-cloud/use-multiple-paths-in-cloud-functions-python-and-flask-fc6780e560d3)
+  * [Medium: Multiple Paths in Cloud Function](https://medium.com/google-cloud/use-multiple-paths-in-cloud-functions-python-and-flask-fc6780e560d3)  
+  * [Google Docs: Deploy Cloud Functions](https://cloud.google.com/functions/docs/deploy#from-local-machine)  
 
 ### General  
 
@@ -933,6 +934,7 @@ In this section I've consolidated various references I found useful when interac
   * [SO: Convert Pandas dataframe to JSON Lines](https://stackoverflow.com/questions/51775175/pandas-dataframe-to-jsonl-json-lines-conversion)  
   * [Flask: Quickstart](https://flask.palletsprojects.com/en/3.0.x/quickstart)  
   * [Full Stack Python: Web Server Gateway Interface (WSGI)](https://www.fullstackpython.com/wsgi-servers.html)  
+  * [Google Docs: Install gcloud CLI](https://cloud.google.com/sdk/docs/install)
 
 ### Big Query  
 
@@ -941,6 +943,7 @@ In this section I've consolidated various references I found useful when interac
   * [GCP Big Query Python Client Library](https://cloud.google.com/python/docs/reference/bigquery/latest/upgrading)  
   * [Querying Public Data With Big Query Client Libraries](https://cloud.google.com/bigquery/docs/quickstarts/quickstart-client-libraries)  
   * [Convert BigQuery Results to JSONL in python](https://stackoverflow.com/questions/55681206/how-to-convert-results-returned-from-bigquery-to-json-format-using-python)  
+  * [BigQuery Data Types: Date Type](https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#date_type)
 
 ### Quarto and Observable JavaScript  
   * [Posit: Overview](https://quarto.org/)  
@@ -1095,6 +1098,23 @@ If the request method is not `"OPTIONS"`, `CORS` is enabled in the header and we
 
 > I need to do more testing to see if the conversions are required. I got this solution from this SO article [SO: How to convert results returned from bigquery to JSON format using Python?](https://stackoverflow.com/questions/55681206/how-to-convert-results-returned-from-bigquery-to-json-format-using-python)  
 
+### Developments in the function code  
+
+I further refined the BigQuery query as the following:  
+
+```SQL
+SELECT 
+  CAST(DATETIME(time, "Europe/Vatican")AS STRING FORMAT 'YYYY-MM-DD HH12:MI:SS') AS local_time,
+  type,
+  `measurementValue`
+FROM `weather-station-ef6ca.weather_measures.measures`
+WHERE type like 'Air Temperature'
+ORDER BY time DESC
+LIMIT 10
+```
+
+Big Query stores the date as a datetime field but when it is converted into a JSON by pandas, the field is converted into a large number. To deal with this at the source, we use the `CAST` function in the query to cast the datetime object as a string with a specific format and timezone. We also order it by time so we get the 10 most recent measurements.
+
 [Jump to GCP References](#gcp-references)
 
 [Return to TOC](#table-of-contents)  
@@ -1211,6 +1231,56 @@ From there I will deploy the new files useing the method descriped in the [GitHu
 ![alt text](img/testCloudFunctionPageOnFirebase.png "The result of the test website with the Cloud Function response")
 
 With that, the basic test was successful so we can move on to developing the cloud functions more appropriately as well as the visualizations. I will document development of the Cloud Functions (structuring and delivering data) in thie project and transforming that data into useful visualizations on the [GitHub: Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site) project.
+
+[Jump to GCP References](#gcp-references)
+
+[Return to TOC](#table-of-contents)  
+
+## Deploying Cloud Functions From a Local Environment  
+
+In order to deploy a Cloud Function from a local development environment we need to install the `gcloud` sdk. The steps to do this are described in this [Google Docs: Install the gcloud CLI](https://cloud.google.com/sdk/docs/install) guide. The main steps are repeated here.  
+
+### Installing the `gcloud` sdk
+
+```
+sudo apt-get update &&
+sudo apt-get install apt-transport-https ca-certificates gnupg curl sudo
+```
+
+Then import the Google Cloud public key. I used this command:  
+
+```
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+```
+Add the distribution URI  
+
+```
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+```  
+
+Install the SDK
+```
+sudo apt-get update && sudo apt-get install google-cloud-cli
+```  
+
+Once the CLI is installed, initialize it with  
+```
+gcloud init
+```  
+
+This will take you through authenticating with Google and ask for the default project.  
+
+Once complete, navigate to the directory with the specific function files and run a version of the following command to deploy it.  
+
+```
+gcloud functions deploy new_https_funct --gen2 --region=us-east1 --runtime=python312 --source=. --entry-point=common_cloud_functions_function --trigger-http
+```  
+
+If it exists, it will update, but if it does not exist, it will create a new function.  
+
+References:  
+[GCP Regions](https://cloud.google.com/functions/docs/locations#tier_1_pricing)  
+[Python Runtimes](https://cloud.google.com/functions/docs/concepts/execution-environment#python)
 
 [Jump to GCP References](#gcp-references)
 
