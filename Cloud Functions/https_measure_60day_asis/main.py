@@ -34,7 +34,7 @@ def my_function(request):
     query_job = client.query(
         """
         SELECT  
-          CAST(DATETIME(time, "Europe/Vatican")AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SS') AS local_time,
+          CAST(time AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SSTZH' AT TIME ZONE 'Europe/Vatican') AS local_time,
           type,
           `measurementValue`
         FROM `weather-station-ef6ca.weather_measures.measures`
