@@ -1,84 +1,85 @@
 import base64
-import functions_framework
 import json
-import pandas as pd
+import functions_framework
 from google.cloud import storage, bigquery
 
 # Triggered from a message on a Cloud Pub/Sub topic.
 @functions_framework.cloud_event
 def topic_transform_load(cloud_event):
 
-    # Triggers to turn on or off portions of this function
-    logging = True
-    cloud_storage = True
-    big_query = True
-    firestore = True
+    # Feature toggles
+    enable_logging = True
+    enable_cloud_storage = True
+    enable_bigquery = True
 
-    # Various resource names
-    ### Cloud Storage
+    # Resource names
     bucket_name = "kesterweather_measurements"
-
-    ### BigQuery Write Table
     table_id = "weather-station-ef6ca.weather_measures.measures"
 
-    # Extract the data from the cloud event and load it as a JSON.
-    base_data = base64.b64decode(cloud_event.data["message"]["data"])
-    decoded_data = json.loads(base_data.decode('utf-8'))
+    # Decode Pub/Sub message
+    raw_data = base64.b64decode(cloud_event.data["message"]["data"])
+    decoded = json.loads(raw_data.decode("utf-8"))
 
-    # Print the time and data of the event to the logs 
-    print("Time is "+str(decoded_data["time"]))
-    if logging:
-      print("The following records were in this message:")
-      print(decoded_data)
+    if enable_logging:
+        print(f"Received uplink at {decoded.get('time')}")
+        print("Full message:")
+        print(json.dumps(decoded, indent=2))
 
-    # The data is provided in two objects but we want them combined. I'll
-    #  do this here by concatenating them into a pandas dataframe.
-    combined_data = pd.concat(
-        [pd.json_normalize(decoded_data["object"]["messages"][0]),
-        pd.json_normalize(decoded_data["object"]["messages"][1])]
-    )
+    # Extract the flat object produced by the new S2120 v2.0 codec
+    obj = decoded.get("object", {})
 
-    # Add the datetime object as a field to the dataframe.
-    combined_data["time"] = decoded_data["time"]
+    # Build a normalized record matching your old schema
+    # (type, measurementId, measurementValue)
+    measurements = [
+        {"type": "Air Temperature",       "measurementId": "4097", "measurementValue": obj.get("temperature_c")},
+        {"type": "Air Humidity",          "measurementId": "4098", "measurementValue": obj.get("humidity_percent")},
+        {"type": "Light Intensity",       "measurementId": "4099", "measurementValue": obj.get("light_lux")},
+        {"type": "UV Index",              "measurementId": "4190", "measurementValue": obj.get("uv_index")},
+        {"type": "Wind Speed",            "measurementId": "4105", "measurementValue": obj.get("wind_speed_m_s")},
+        {"type": "Wind Direction Sensor", "measurementId": "4104", "measurementValue": obj.get("wind_direction_deg")},
+        {"type": "Rain Gauge",            "measurementId": "4113", "measurementValue": obj.get("rainfall_intensity_mm_h")},
+        {"type": "Barometric Pressure",   "measurementId": "4101", "measurementValue": obj.get("pressure_pa")},
+        {"type": "Peak Wind Gust",        "measurementId": "4191", "measurementValue": obj.get("peak_wind_gust_m_s")},
+        {"type": "Rain Accumulation",     "measurementId": "4213", "measurementValue": obj.get("rain_accumulation_mm")},
+    ]
 
-    # Convert the pandas dataframe to a JSONL (JSON line) object
-    records = combined_data.to_json(orient = "records",lines = True)
+    # Add timestamp to each record
+    for m in measurements:
+        m["time"] = decoded.get("time")
 
-    if logging:
-      print("Extracted and Transformed Data:")
-      print(records)
+    # Convert to JSON Lines format
+    jsonl_output = "\n".join(json.dumps(m) for m in measurements)
 
-    # Write parsed message to a Cloud Storage bucket
-    if cloud_storage:
+    if enable_logging:
+        print("Transformed JSONL:")
+        print(jsonl_output)
 
-        # Give the file a unique name
-        destination_blob_name = "measure_" + str(decoded_data["time"])
-
-        # Uploads a file to the bucket.
+    # -------------------------
+    # Cloud Storage Upload
+    # -------------------------
+    if enable_cloud_storage:
         storage_client = storage.Client()
-        bucket = storage_client.get_bucket(bucket_name)
-        blob = bucket.blob(destination_blob_name)
-        
-        blob.upload_from_string(records)
+        bucket = storage_client.bucket(bucket_name)
 
-        print("Cloud Storage Complete!")
+        filename = f"measure_{decoded.get('time')}.jsonl"
+        blob = bucket.blob(filename)
+        blob.upload_from_string(jsonl_output)
 
-    if big_query:
+        print(f"Uploaded to Cloud Storage: {filename}")
 
-        # Create a connection object to BigQuery
+    # -------------------------
+    # BigQuery Insert
+    # -------------------------
+    if enable_bigquery:
         client = bigquery.Client()
-
-        # Reference a specific BigQuery Table
         table = client.get_table(table_id)
 
-        # Insert Data Into the Table. If an error occurs, the dictionary is not empty so we print its contents
-        errors = client.insert_rows_from_dataframe(table, combined_data)
-        if errors == [[]]:
-            print("Success, data loaded in Big Query")
-            return "Success"
+        errors = client.insert_rows_json(table, measurements)
+
+        if not errors:
+            print("BigQuery load successful")
         else:
-            print("An error occured")
+            print("BigQuery load errors:")
             print(errors)
-            return "Failed"
 
-
+    return "OK"
