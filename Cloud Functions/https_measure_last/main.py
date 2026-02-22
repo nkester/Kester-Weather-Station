@@ -33,13 +33,20 @@ def my_function(request):
     client = bigquery.Client()
     query_job = client.query(
         """
-        SELECT  
-          CAST(time AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SSTZH' AT TIME ZONE 'Etc/GMT+5) AS local_time,
+        SELECT
+          CAST( time AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SSTZH' AT TIME ZONE 'Etc/GMT+5') AS local_time,
           type,
-          `measurementValue`
-        FROM `weather-station-ef6ca.weather_measures.measures`
-        ORDER BY local_time DESC
-        LIMIT 1
+          measurementValue
+        FROM
+          `weather-station-ef6ca`.`weather_measures`.`measures`
+        WHERE
+          time = (
+          SELECT
+            MAX(time)
+          FROM
+            `weather-station-ef6ca`.`weather_measures`.`measures` )
+          ORDER BY
+            local_time DESC;
         """
     )
 

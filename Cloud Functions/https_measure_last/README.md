@@ -7,7 +7,7 @@ gcloud functions deploy https_measure_last \
 --gen2 \
 --region=us-east1 \
 --runtime=python312 \
---source=./https_measure_last \
+--source=. \
 --entry-point=https_measure_last \
 --allow-unauthenticated \
 --memory=512MiB \
